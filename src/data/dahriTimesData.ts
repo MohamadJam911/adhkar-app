@@ -433,35 +433,35 @@ export const DAHRI_TIMES: string[][][] = [
 ];
 
 const DAHRI_REFERENCE_LOCATIONS = [
-  { lat: 31.7683, lon: 35.2137, offset: 0 },   // القدس[cite: 1]
-  { lat: 31.9038, lon: 35.2034, offset: 0 },   // رام الله والبيرة[cite: 1]
-  { lat: 31.7054, lon: 35.2024, offset: 0 },   // بيت لحم[cite: 1]
-  { lat: 32.4622, lon: 35.2954, offset: 0 },   // جنين[cite: 1]
-  { lat: 32.2211, lon: 35.2544, offset: 0 },   // نابلس[cite: 1]
-  { lat: 32.7019, lon: 35.2978, offset: 0 },   // الناصرة[cite: 1]
-  { lat: 32.5197, lon: 35.1517, offset: 0 },   // أم الفحم[cite: 1]
-  { lat: 31.8661, lon: 35.4542, offset: -1 },  // أريحا[cite: 1]
-  { lat: 32.7950, lon: 35.5320, offset: -1 },  // طبرية[cite: 1]
-  { lat: 32.9640, lon: 35.4960, offset: -1 },  // صفد[cite: 1]
-  { lat: 32.4970, lon: 35.4970, offset: -1 },  // بيسان[cite: 1]
-  { lat: 31.5326, lon: 35.0998, offset: 1 },   // الخليل[cite: 1]
-  { lat: 31.5590, lon: 35.0180, offset: 1 },   // إذنا[cite: 1]
-  { lat: 31.5052, lon: 35.0270, offset: 1 },   // دورا[cite: 1]
-  { lat: 31.5222, lon: 34.9835, offset: 1 },   // بيت عوا[cite: 1]
-  { lat: 32.7940, lon: 34.9896, offset: 1 },   // حيفا[cite: 1]
-  { lat: 32.9295, lon: 35.0821, offset: 1 },   // عكا[cite: 1]
-  { lat: 32.3159, lon: 35.0294, offset: 1 },   // طولكرم[cite: 1]
-  { lat: 32.1140, lon: 34.9760, offset: 1 },   // كفر قاسم[cite: 1]
-  { lat: 32.2658, lon: 35.0111, offset: 1 },   // الطيبة[cite: 1]
-  { lat: 31.9514, lon: 34.8885, offset: 1.5 }, // اللد[cite: 1]
-  { lat: 31.9295, lon: 34.8658, offset: 1.5 }, // الرملة[cite: 1]
-  { lat: 32.1891, lon: 34.9701, offset: 1.5 }, // قلقيلية[cite: 1]
-  { lat: 31.2529, lon: 34.7915, offset: 2 },   // بئر السبع[cite: 1]
-  { lat: 32.0523, lon: 34.7500, offset: 2 },   // يافا[cite: 1]
-  { lat: 31.5016, lon: 34.4668, offset: 3 },   // غزة[cite: 1]
-  { lat: 31.2969, lon: 34.2432, offset: 4 },   // رفح[cite: 1]
-  { lat: 31.3462, lon: 34.3062, offset: 4 },   // خانيونس[cite: 1]
-  { lat: 31.4170, lon: 34.3650, offset: 4 },   // دير البلح[cite: 1]
+  { lat: 31.7683, lon: 35.2137, offset: 0 },   // القدس
+  { lat: 31.9038, lon: 35.2034, offset: 0 },   // رام الله والبيرة
+  { lat: 31.7054, lon: 35.2024, offset: 0 },   // بيت لحم
+  { lat: 32.4622, lon: 35.2954, offset: 0 },   // جنين
+  { lat: 32.2211, lon: 35.2544, offset: 0 },   // نابلس
+  { lat: 32.7019, lon: 35.2978, offset: 0 },   // الناصرة
+  { lat: 32.5197, lon: 35.1517, offset: 0 },   // أم الفحم
+  { lat: 31.8661, lon: 35.4542, offset: -1 },  // أريحا
+  { lat: 32.7950, lon: 35.5320, offset: -1 },  // طبرية
+  { lat: 32.9640, lon: 35.4960, offset: -1 },  // صفد
+  { lat: 32.4970, lon: 35.4970, offset: -1 },  // بيسان
+  { lat: 31.5326, lon: 35.0998, offset: 1 },   // الخليل
+  { lat: 31.5590, lon: 35.0180, offset: 1 },   // إذنا
+  { lat: 31.5052, lon: 35.0270, offset: 1 },   // دورا
+  { lat: 31.5222, lon: 34.9835, offset: 1 },   // بيت عوا
+  { lat: 32.7940, lon: 34.9896, offset: 1 },   // حيفا
+  { lat: 32.9295, lon: 35.0821, offset: 1 },   // عكا
+  { lat: 32.3159, lon: 35.0294, offset: 1 },   // طولكرم
+  { lat: 32.1140, lon: 34.9760, offset: 1 },   // كفر قاسم
+  { lat: 32.2658, lon: 35.0111, offset: 1 },   // الطيبة
+  { lat: 31.9514, lon: 34.8885, offset: 1.5 }, // اللد
+  { lat: 31.9295, lon: 34.8658, offset: 1.5 }, // الرملة
+  { lat: 32.1891, lon: 34.9701, offset: 1.5 }, // قلقيلية
+  { lat: 31.2529, lon: 34.7915, offset: 2 },   // بئر السبع
+  { lat: 32.0523, lon: 34.7500, offset: 2 },   // يافا
+  { lat: 31.5016, lon: 34.4668, offset: 3 },   // غزة
+  { lat: 31.2969, lon: 34.2432, offset: 4 },   // رفح
+  { lat: 31.3462, lon: 34.3062, offset: 4 },   // خانيونس
+  { lat: 31.4170, lon: 34.3650, offset: 4 },   // دير البلح
 ];
 
 export const getDahriCityOffset = (lat: number, lon: number): number => {
@@ -478,30 +478,32 @@ export const getDahriCityOffset = (lat: number, lon: number): number => {
   return nearestDistance <= 0.6 ? nearestOffset : 0;
 };
 
-export const getPalestineDstOffset = (date: Date): number => {
+/**
+ * دالة تعتمد على سحب إزاحة الوقت مباشرة من ساعة الهاتف (getTimezoneOffset)
+ * لتحديد التوقيت الصيفي أو الشتوي تلقائياً ودون تعقيد.
+ */
+export const getPalestineDstOffset = (date: Date = new Date()): number => {
   try {
-    const getOffset = (d: Date) => {
-      const parts = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'Asia/Hebron',
-        timeZoneName: 'shortOffset',
-      }).formatToParts(d);
-      const value = parts.find(part => part.type === 'timeZoneName')?.value || 'GMT+02:00';
-      const match = value.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
-      if (!match) return 120;
-      const sign = match[1] === '+' ? 1 : -1;
-      return sign * (Number(match[2]) * 60 + Number(match[3] || 0));
-    };
-
-    const winterOffset = getOffset(new Date(Date.UTC(date.getFullYear(), 0, 15, 12)));
-    const currentOffset = getOffset(date);
-    return currentOffset - winterOffset;
-  } catch {
-    return 0;
-  }
+    // جلب الفرق بالدقائق بين توقيت الجهاز المحلي وتوقيت UTC مع عكس الإشارة
+    const tzOffsetMinutes = -date.getTimezoneOffset();
+    
+    // إذا كان الهاتف مضبوطاً على التوقيت الصيفي (GMT+3)، فالإزاحة تكون 180 دقيقة أو أكثر
+    if (tzOffsetMinutes >= 180) {
+      return 60; // إضافة ساعة التوقيت الصيفي
+    }
+  } catch (e) {}
+  
+  return 0; // التوقيت الشتوي القياسي
 };
 
-export const addMinutesToTime = (time: string, minutes: number): string => {
-  const [hours, mins] = time.split(':').map(Number);
+export const addMinutesToTime = (time: string, minutes: number, isPM: boolean = false): string => {
+  let [hours, mins] = time.split(':').map(Number);
+  
+  // إذا كانت الصلاة مسائية (عصر، مغرب، عشاء) وساعتها مسجلة بأقل من 12، نحولها لنظام 24 ساعة
+  if (isPM && hours < 12) {
+    hours += 12;
+  }
+
   const total = (hours * 60 + mins + minutes + 1440) % 1440;
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 };

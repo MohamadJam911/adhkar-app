@@ -1,0 +1,2191 @@
+import React from 'react';
+import { useState, useEffect, useRef, createContext, useContext, useCallback } from 'react';
+import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Switch, Linking, ActivityIndicator, Modal, FlatList, Share, Platform, Alert } from 'react-native';
+import * as Notifications from 'expo-notifications';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import Animated, { FadeIn, Layout, SlideOutRight, SlideOutLeft, SlideOutUp, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
+import { Magnetometer } from 'expo-sensors';
+import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Defs, Pattern, Path, Rect, Circle, G } from 'react-native-svg';
+import { captureRef, releaseCapture } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
+
+import adhkarData from './src/data/adhkar.json';
+import { ALLAH_NAMES } from './src/data/allahNamesData';
+import { QURAN_VERSES_DATA, QuranVerseItem } from './src/data/quranVersesData';
+import { PALESTINE_CITIES, DAHRI_TIMES, getDahriCityOffset, getPalestineDstOffset, addMinutesToTime } from './src/data/dahriTimesData';
+import { scheduleAppNotifications } from './src/services/notificationService';
+
+SplashScreen.preventAutoHideAsync();
+
+type Dhikr = {
+  id: string;
+  text: string;
+  count: number;
+  reward?: string;
+};
+
+const ThemeContext = createContext<{ isDarkMode: boolean; setIsDarkMode: (val: boolean) => void }>({
+  isDarkMode: true,
+  setIsDarkMode: () => {},
+});
+
+const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+const RootStack = createNativeStackNavigator();
+
+const formatArabicNumbers = (text: string | number) => {
+  if (text === null || text === undefined) return '';
+  const str = String(text);
+  const hindiToWestern: { [key: string]: string } = {
+    '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+    '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+  };
+  return str.replace(/[٠-٩]/g, (match) => hindiToWestern[match] || match);
+};
+
+const toEasternArabicNumerals = (text: string | number) => {
+  if (!text) return '';
+  const westernToHindi: { [key: string]: string } = {
+    '0': '٠', '1': '١', '2': '٢', '3': '٣', '4': '٤',
+    '5': '٥', '6': '٦', '7': '٧', '8': '٨', '9': '٩'
+  };
+  return String(text).replace(/[0-9]/g, (match) => westernToHindi[match] || match);
+};
+
+const getSafeHijriDate = (date = new Date()) => {
+  try {
+    const options: Intl.DateTimeFormatOptions = {
+      calendar: 'islamic-umalqura',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    };
+    const formatted = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', options).format(date);
+    if (formatted && !formatted.includes('التقويم')) {
+      return formatted;
+    }
+  } catch (e) {}
+
+  const jy = date.getFullYear();
+  const hijriYear = Math.floor((jy - 622) * (33 / 32));
+  return formatArabicNumbers(`24 صفر ${hijriYear} هـ`);
+};
+
+const ExactImagePatternWall = ({ isDarkMode, children }: { isDarkMode: boolean, children: React.ReactNode }) => {
+  const gradientColors = isDarkMode 
+    ? ['#201C17', '#14110E', '#0B0907'] as const 
+    : ['#F9F4EC', '#EFE7DA', '#DFD3C3'] as const;
+
+  const patternColor = isDarkMode ? 'rgba(212, 163, 115, 0.22)' : 'rgba(158, 109, 59, 0.25)';
+
+  return (
+    <LinearGradient colors={gradientColors} style={styles.canvasContainer}>
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <Svg height="100%" width="100%">
+          <Defs>
+            <Pattern id="islamicPattern" width="45" height="45" patternUnits="userSpaceOnUse">
+              <Path d="M22.5 0 L45 22.5 L22.5 45 L0 22.5 Z" fill="none" stroke={patternColor} strokeWidth="1.2" />
+              <Circle cx="22.5" cy="22.5" r="9" fill="none" stroke={patternColor} strokeWidth="1.2" />
+              <Path d="M0 0 L45 45 M45 0 L0 45" stroke={patternColor} strokeWidth="0.6" opacity="0.6" />
+            </Pattern>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#islamicPattern)" />
+        </Svg>
+      </View>
+      {children}
+    </LinearGradient>
+  );
+};
+
+const HeritageArchBanner = ({ title, textColor, isDarkMode }: { title: string, textColor: string, isDarkMode: boolean }) => {
+  const bannerBackgroundColor = isDarkMode ? '#28231F' : '#FFFFFF';
+  const bannerBorderColor = isDarkMode ? 'rgba(212, 163, 115, 0.35)' : 'rgba(158, 109, 59, 0.35)';
+  const innerPatternColor = isDarkMode ? 'rgba(212, 163, 115, 0.10)' : 'rgba(158, 109, 59, 0.08)';
+
+  return (
+    <View style={styles.heritageArchContainer}>
+      <View style={[styles.heritageArchShape, { backgroundColor: bannerBackgroundColor, borderColor: bannerBorderColor }]}>
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <Svg height="100%" width="100%" style={{ borderTopLeftRadius: 30, borderTopRightRadius: 30, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, overflow: 'hidden' }}>
+            <Defs>
+              <Pattern id="bannerPattern" width="24" height="24" patternUnits="userSpaceOnUse">
+                <Circle cx="12" cy="12" r="1.5" fill={innerPatternColor} />
+                <Path d="M12 0 L24 12 L12 24 L0 12 Z" fill="none" stroke={innerPatternColor} strokeWidth="0.8" />
+              </Pattern>
+            </Defs>
+            <Rect width="100%" height="100%" fill="url(#bannerPattern)" />
+          </Svg>
+        </View>
+        <Text style={[styles.heritageArchTitleText, { color: textColor }]}>{title}</Text>
+      </View>
+    </View>
+  );
+};
+
+const SeniorBackArrow = ({ onPress, isDarkMode }: { onPress: () => void, isDarkMode: boolean }) => {
+  const arrowColor = isDarkMode ? '#E5B279' : '#6F4E37';
+  return (
+    <TouchableOpacity onPress={onPress} style={{ paddingVertical: 8, paddingHorizontal: 12, alignSelf: 'flex-start', marginBottom: 5 }}>
+      <Text style={{ fontSize: 28, color: arrowColor, fontWeight: 'bold' }}>〈</Text>
+    </TouchableOpacity>
+  );
+};
+
+const extractAyahNumber = (reference: string): string => {
+  if (!reference) return '';
+  const match = String(reference).match(/(\d+|[٠-٩]+)/g);
+  if (match && match.length > 0) {
+    return formatArabicNumbers(match[match.length - 1]);
+  }
+  return '';
+};
+
+type QuranSharePageProps = {
+  verse: QuranVerseItem;
+  fontsLoaded: boolean;
+};
+
+// --- بطاقة مشاركة الآيات مع هوامش آمنة وتمركز دقيق ---
+const QuranSharePage = ({ verse, fontsLoaded }: QuranSharePageProps) => {
+  const quranNativeFont = Platform.OS === 'ios' ? 'AmiriQuran-Regular' : 'Amiri Quran';
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ width: 1080, padding: 60, backgroundColor: '#FAF5EC', justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ fontSize: 36, color: '#6F4E37', fontWeight: 'bold' }}>جاري تجهيز الآية...</Text>
+      </View>
+    );
+  }
+
+  const ayahLength = (verse.ayah || '').length;
+  let ayahFontSize = 50;
+  let ayahLineHeight = Platform.OS === 'android' ? 130 : 118;
+
+  if (ayahLength < 70) {
+    ayahFontSize = 60;
+    ayahLineHeight = Platform.OS === 'android' ? 150 : 132;
+  } else if (ayahLength > 180 && ayahLength <= 320) {
+    ayahFontSize = 44;
+    ayahLineHeight = Platform.OS === 'android' ? 112 : 102;
+  } else if (ayahLength > 320) {
+    ayahFontSize = 38;
+    ayahLineHeight = Platform.OS === 'android' ? 98 : 90;
+  }
+
+  const rawNum = extractAyahNumber(verse.reference);
+  const easternAyahNum = toEasternArabicNumerals(rawNum);
+
+  return (
+    <View style={{ width: 1080, backgroundColor: '#FAF5EC', padding: 45, alignItems: 'center' }}>
+      <View style={{ width: '100%', borderWidth: 4, borderColor: '#8A5E33', borderRadius: 28, padding: 14, backgroundColor: '#FAF5EC' }}>
+        <View style={{ width: '100%', borderWidth: 1.8, borderColor: '#C8A875', borderRadius: 20, paddingHorizontal: 45, paddingVertical: 40, alignItems: 'center' }}>
+          
+          {/* إطار السورة الزخرفي مع تمركز دقيق */}
+          <View style={{ width: 920, height: 110, justifyContent: 'center', alignItems: 'center', marginBottom: 25 }}>
+            <Svg width="920" height="110" viewBox="0 0 920 110" style={StyleSheet.absoluteFill}>
+              <Rect x="2" y="2" width="916" height="106" rx="14" fill="#F4E9D5" stroke="#8A5E33" strokeWidth="3" />
+              <Rect x="8" y="8" width="904" height="94" rx="10" fill="none" stroke="#C8A875" strokeWidth="1.5" />
+              
+              <G transform="translate(15, 10)">
+                <Path d="M 0 45 C 30 10, 50 10, 80 45 C 50 80, 30 80, 0 45 Z" fill="#EBD9BD" stroke="#8A5E33" strokeWidth="2" />
+                <Circle cx="40" cy="45" r="14" fill="#F4E9D5" stroke="#8A5E33" strokeWidth="1.8" />
+                <Circle cx="40" cy="45" r="5" fill="#8A5E33" />
+                <Path d="M 80 45 L 120 15 M 80 45 L 120 75" stroke="#C8A875" strokeWidth="2" />
+              </G>
+
+              <G transform="translate(785, 10)">
+                <Path d="M 120 45 C 90 10, 70 10, 40 45 C 70 80, 90 80, 120 45 Z" fill="#EBD9BD" stroke="#8A5E33" strokeWidth="2" />
+                <Circle cx="80" cy="45" r="14" fill="#F4E9D5" stroke="#8A5E33" strokeWidth="1.8" />
+                <Circle cx="80" cy="45" r="5" fill="#8A5E33" />
+                <Path d="M 40 45 L 0 15 M 40 45 L 0 75" stroke="#C8A875" strokeWidth="2" />
+              </G>
+
+              <Path d="M 140 22 L 780 22 M 140 88 L 780 88" stroke="#8A5E33" strokeWidth="1.5" />
+            </Svg>
+
+            <Text style={{ fontFamily: quranNativeFont, fontSize: 44, color: '#2C1B0D', textAlign: 'center', fontWeight: 'bold', includeFontPadding: false, textAlignVertical: 'center', marginTop: Platform.OS === 'android' ? -4 : -5 }}>
+              {verse.surah}
+            </Text>
+          </View>
+
+          {/* البسملة */}
+          <View style={{ marginVertical: 12 }}>
+            <Text style={{ fontFamily: quranNativeFont, fontSize: 48, color: '#6A4825', textAlign: 'center' }}>
+              بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+            </Text>
+          </View>
+
+          <View style={{ width: 180, height: 2, backgroundColor: '#C8A875', marginVertical: 18 }} />
+
+          {/* نص الآية ورقمها */}
+          <View style={{ width: '100%', marginVertical: 18, paddingHorizontal: 35 }}>
+            <Text
+              style={{
+                fontFamily: quranNativeFont,
+                fontSize: ayahFontSize,
+                lineHeight: ayahLineHeight,
+                color: '#1E160E',
+                textAlign: 'center',
+                writingDirection: 'rtl',
+              }}
+            >
+              {verse.ayah}
+              {easternAyahNum ? (
+                <Text style={{ color: '#8A5E33', fontSize: ayahFontSize * 0.9 }}>
+                  {` ﴿${easternAyahNum}﴾`}
+                </Text>
+              ) : ''}
+            </Text>
+          </View>
+
+          {/* التفسير الميسر */}
+          {verse.meaning ? (
+            <View style={{ width: '100%', backgroundColor: '#F3E9D7', borderWidth: 1.5, borderColor: '#C8A875', borderRadius: 18, paddingVertical: 24, paddingHorizontal: 28, marginTop: 30 }}>
+              <Text style={{ fontSize: 28, color: '#6E4E29', fontWeight: 'bold', textAlign: 'right', marginBottom: 10 }}>
+                📖 المعنى والتفسير الميسر:
+              </Text>
+              <Text style={{ fontSize: 32, color: '#33261A', lineHeight: 52, textAlign: 'right', writingDirection: 'rtl', fontWeight: '500' }}>
+                {verse.meaning}
+              </Text>
+            </View>
+          ) : null}
+
+          <View style={{ width: '60%', height: 1.5, backgroundColor: '#C8A875', marginTop: 35, marginBottom: 16 }} />
+
+          <Text style={{ fontSize: 22, color: '#8A7457', fontWeight: 'bold', textAlign: 'center' }}>
+            تطبيق مسرى المسلم • صدقة جارية ونورٌ للمؤمنين
+          </Text>
+
+        </View>
+      </View>
+    </View>
+  );
+};
+
+// --- بطاقة مشاركة مواقيت الصلاة عالية الدقة ---
+const PrayerSharePage = ({ timings, locationName, gregorianDate, hijriDate, duhaTimes, nightInfo }: any) => {
+  return (
+    <View style={{ width: 1080, backgroundColor: '#F7F0E3', padding: 50, alignItems: 'center' }}>
+      <View style={{ width: '100%', borderWidth: 5, borderColor: '#A47A45', borderRadius: 24, padding: 20 }}>
+        <View style={{ borderWidth: 2, borderColor: '#C8A875', borderRadius: 16, padding: 35, alignItems: 'center' }}>
+          
+          <Text style={{ fontSize: 32, color: '#80613B', fontWeight: 'bold', marginBottom: 10 }}>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Text>
+          <Text style={{ fontSize: 44, color: '#63492C', fontWeight: 'bold', marginVertical: 8 }}>مواقيت الصلاة وفق التقويم الدهري</Text>
+          <Text style={{ fontSize: 28, color: '#A47A45', fontWeight: 'bold', marginBottom: 20 }}>📍 {locationName}</Text>
+          
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '90%', paddingBottom: 15, borderBottomWidth: 2, borderColor: '#C8A875' }}>
+            <Text style={{ fontSize: 24, color: '#63492C' }}>{gregorianDate}</Text>
+            <Text style={{ fontSize: 24, color: '#80613B', fontWeight: 'bold' }}>{hijriDate}</Text>
+          </View>
+
+          <View style={{ width: '90%', marginVertical: 30 }}>
+            {[
+              { name: 'صلاة الفجر', time: timings?.Fajr, icon: '🌅' },
+              { name: 'الشروق', time: timings?.Sunrise, icon: '☀️' },
+              { name: 'صلاة الظهر', time: timings?.Dhuhr, icon: '☀️' },
+              { name: 'صلاة العصر', time: timings?.Asr, icon: '🌤️' },
+              { name: 'صلاة المغرب', time: timings?.Maghrib, icon: '🌇' },
+              { name: 'صلاة العشاء', time: timings?.Isha, icon: '🌙' },
+            ].map((p, idx) => (
+              <View key={idx} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderColor: 'rgba(200,168,117,0.4)' }}>
+                <Text style={{ fontSize: 34, color: '#63492C', fontWeight: 'bold' }}>{formatArabicNumbers(p.time)}</Text>
+                <Text style={{ fontSize: 32, color: '#241C14', fontWeight: '600' }}>{p.icon} {p.name}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={{ width: '90%', backgroundColor: 'rgba(212,163,115,0.18)', borderRadius: 20, padding: 20, borderWidth: 1.5, borderColor: '#A47A45', marginBottom: 25 }}>
+            <Text style={{ fontSize: 25, color: '#80613B', fontWeight: 'bold', textAlign: 'center' }}>
+              ☀️ صلاة الضحى: من {duhaTimes.start} إلى {duhaTimes.end}
+            </Text>
+            <Text style={{ fontSize: 25, color: '#80613B', fontWeight: 'bold', textAlign: 'center', marginTop: 8 }}>
+              🌙 الثلث الأخير من الليل يبدأ الساعة: {nightInfo.start}
+            </Text>
+          </View>
+
+          <Text style={{ fontSize: 22, color: '#A28A6B', textAlign: 'center' }}>من تطبيق مسرى المسلم • حفظك الله ورعاك</Text>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+// --- 1. HOME SCREEN ---
+function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, hapticEnabled: boolean, fontSize: number }) {
+  const { isDarkMode } = useContext(ThemeContext);
+  const themeColors = isDarkMode ? heritageDarkTheme : heritageLightTheme;
+
+  const [currentTime, setCurrentTime] = useState('');
+  const [gregorianDate, setGregorianDate] = useState('');
+  const [hijriDate, setHijriDate] = useState('');
+  const [tasbeehCount, setTasbeehCount] = useState(0);
+  
+  const [nameIndex, setNameIndex] = useState(() => Math.floor(Math.random() * ALLAH_NAMES.length));
+  const [verseIndex, setVerseIndex] = useState(() => Math.floor(Math.random() * QURAN_VERSES_DATA.length));
+  const [shareModalVisible, setShareModalVisible] = useState(false);
+
+  const shareCardRef = useRef<View>(null);
+
+  const [fontsLoaded] = useFonts({
+    'Amiri Quran': require('./assets/fonts/AmiriQuran-Regular.ttf'),
+    'AmiriQuran-Regular': require('./assets/fonts/AmiriQuran-Regular.ttf'),
+  });
+
+  const quranFontFamily = fontsLoaded ? (Platform.OS === 'ios' ? 'AmiriQuran-Regular' : 'Amiri Quran') : undefined;
+
+  useEffect(() => {
+    const updateDateTime = () => {
+      const now = new Date();
+      setCurrentTime(formatArabicNumbers(now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })));
+      setGregorianDate(formatArabicNumbers(now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })));
+      setHijriDate(formatArabicNumbers(getSafeHijriDate(now)));
+    };
+
+    updateDateTime();
+    const interval = setInterval(updateDateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleQuickTasbeeh = async () => {
+    if (hapticEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setTasbeehCount(prev => prev + 1);
+    await logStat('tasbeeh', 1);
+  };
+
+  const handleNextAllahName = () => {
+    if (hapticEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setNameIndex((prev) => (prev + 1) % ALLAH_NAMES.length);
+  };
+
+  const handleNextVerse = async () => {
+    if (hapticEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setVerseIndex((prev) => (prev + 1) % QURAN_VERSES_DATA.length);
+    await logStat('ayah', 1);
+  };
+
+  const currentVerse = QURAN_VERSES_DATA[verseIndex];
+
+  const shareAsText = async () => {
+    const shareMessage = `📜 آية من كتاب الله:\n\n${currentVerse.ayah}\n${currentVerse.reference}\n\nالمعنى: ${currentVerse.meaning}\n\n[مشارك من تطبيق مسرى المسلم]`;
+    try {
+      await Share.share({ message: shareMessage });
+    } catch (e) {
+      Alert.alert('خطأ', 'تعذرت عملية المشاركة.');
+    }
+  };
+
+  const shareAsImageCard = async () => {
+    if (!fontsLoaded) {
+      Alert.alert('يرجى الانتظار', 'جاري تجهيز خط القرآن الكريم، حاول مرة أخرى بعد لحظات.');
+      return;
+    }
+
+    let uri: string | null = null;
+    try {
+      if (!shareCardRef.current) return;
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(requestAnimationFrame);
+
+      uri = await captureRef(shareCardRef, { format: 'png', quality: 1, result: 'tmpfile' });
+      await Sharing.shareAsync(uri, { dialogTitle: 'مشاركة آية من القرآن الكريم', mimeType: 'image/png' });
+    } catch (error) {
+      Alert.alert('خطأ', 'فشل إنشاء صورة الآية.');
+    } finally {
+      if (uri) {
+        try { releaseCapture(uri); } catch (e) {}
+      }
+    }
+  };
+
+  const closeModalThenShare = (action: () => void) => {
+    setShareModalVisible(false);
+    setTimeout(action, 400);
+  };
+
+  const openWhatsApp = () => {
+    Linking.openURL('https://wa.me/972000000000?text=السلام%20عليكم%20أخي،%20أعجبني%20تطبيق%20مسرى%20المسلم');
+  };
+
+  return (
+    <ExactImagePatternWall isDarkMode={isDarkMode}>
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
+      
+      <View style={{ position: 'absolute', top: 0, left: 0, width: 1080, opacity: 0 }} pointerEvents="none" collapsable={false}>
+        <View ref={shareCardRef} collapsable={false} key={`verse-card-${verseIndex}`}>
+          <QuranSharePage verse={currentVerse} fontsLoaded={fontsLoaded} />
+        </View>
+      </View>
+
+      <ScrollView contentContainerStyle={{ padding: 15 }}>
+        <HeritageArchBanner title="بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ" textColor={themeColors.text.color} isDarkMode={isDarkMode} />
+
+        <View style={[styles.mainHeaderCard, themeColors.card]}>
+          <Text style={[styles.clockText, themeColors.text, { fontSize: fontSize + 12 }]}>{currentTime}</Text>
+          <Text style={[styles.dateText, themeColors.subText, { fontSize: fontSize - 2 }]}>{gregorianDate}</Text>
+          <Text style={[styles.hijriText, themeColors.accentText, { fontSize: fontSize - 2 }]}>{hijriDate}</Text>
+        </View>
+
+        <TouchableOpacity style={[styles.verseCard, themeColors.card, { paddingVertical: 24, paddingHorizontal: 18 }]} onPress={handleNextVerse} activeOpacity={0.85}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Text style={[styles.verseBadgeTitle, themeColors.accentText, { fontSize: fontSize - 2 }]}>📌 بلغوا عني ولو آية</Text>
+            <TouchableOpacity onPress={(e) => { e.stopPropagation(); setShareModalVisible(true); }} style={styles.shareBtnEnhanced} activeOpacity={0.8}>
+              <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#D4A373' }}>مشاركة 🔗</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <Text
+            key={fontsLoaded ? 'verse-loaded' : 'verse-loading'}
+            style={[
+              styles.verseText,
+              themeColors.text,
+              {
+                fontSize: fontSize + 4,
+                lineHeight: Platform.OS === 'android' ? (fontSize + 4) * 2.3 : (fontSize + 4) * 1.8,
+                textAlign: 'center',
+                fontFamily: quranFontFamily,
+                writingDirection: 'rtl',
+                marginVertical: 8,
+              },
+            ]}
+          >
+            {currentVerse.ayah}
+          </Text>
+
+          <Text style={[styles.verseRef, themeColors.accentText, { fontSize: fontSize - 2, textAlign: 'center', fontWeight: 'bold', marginVertical: 8 }]}>
+            {currentVerse.reference}
+          </Text>
+          
+          <Text style={[styles.verseMeaning, themeColors.subText, { fontSize: fontSize - 3, textAlign: 'right', marginTop: 6 }]}>
+            المعنى: {currentVerse.meaning}
+          </Text>
+
+          <Text style={[styles.tapHintText, themeColors.accentText, { fontSize: fontSize - 6, textAlign: 'center', marginTop: 14 }]}>
+            (اضغط هنا لرؤية آية أخرى)
+          </Text>
+        </TouchableOpacity>
+
+        <Modal visible={shareModalVisible} transparent={true} animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, themeColors.card]}>
+              <Text style={[styles.modalTitle, themeColors.text, { fontSize: fontSize + 2 }]}>اختر طريقة المشاركة</Text>
+              <Text style={[themeColors.subText, { textAlign: 'center', marginBottom: 25, fontSize: fontSize - 4 }]}>كيف ترغب في مشاركة هذه الآية الكريمة؟</Text>
+              
+              <TouchableOpacity style={styles.shareOptionBtn} onPress={() => closeModalThenShare(shareAsImageCard)} activeOpacity={0.8}>
+                <Text style={styles.shareOptionBtnText}>📖 مشاركة كبطاقة مصحف (صورة)</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.shareOptionBtn, { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: '#D4A373', marginTop: 12 }]} 
+                onPress={() => closeModalThenShare(shareAsText)} 
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.shareOptionBtnText, themeColors.text]}>💬 مشاركة كنص عادي</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={[styles.closeModalBtn, { marginTop: 20 }]} onPress={() => setShareModalVisible(false)}>
+                <Text style={styles.closeModalBtnText}>إلغاء</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        <View style={[styles.tasbeehCard, themeColors.card]}>
+          <Text style={[styles.tasbeehTitle, themeColors.text, { fontSize: fontSize }]}>الذكر السريع</Text>
+          <Text style={[styles.tasbeehWords, themeColors.subText, { fontSize: fontSize - 3 }]}>استغفر الله • لا إله إلا الله • الحمد لله</Text>
+          
+          <TouchableOpacity onPress={handleQuickTasbeeh} activeOpacity={0.8}>
+            <LinearGradient
+              colors={['#E5B279', '#C8935E']}
+              style={[styles.tasbeehCircle, { width: fontSize * 6, height: fontSize * 6, borderRadius: (fontSize * 6) / 2 }]}
+            >
+              <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                <Svg height="100%" width="100%">
+                  <Defs>
+                    <Pattern id="quickCirclePattern" width="18" height="18" patternUnits="userSpaceOnUse">
+                      <Circle cx="9" cy="9" r="2.5" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
+                      <Path d="M9 0 L18 9 L9 18 L0 9 Z" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="0.8" />
+                    </Pattern>
+                  </Defs>
+                  <Rect width="100%" height="100%" fill="url(#quickCirclePattern)" />
+                </Svg>
+              </View>
+              <Text style={[styles.tasbeehNumber, themeColors.circleText, { fontSize: fontSize + 14 }]}>{formatArabicNumbers(tasbeehCount)}</Text>
+              <Text style={[styles.tasbeehTapLabel, themeColors.circleSubText, { fontSize: fontSize - 7 }]}>اضغط للتسبيح</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {tasbeehCount > 0 && (
+            <TouchableOpacity onPress={() => setTasbeehCount(0)} style={styles.resetTasbeehBtn}>
+              <Text style={[styles.resetTasbeehText, { fontSize: fontSize - 3 }]}>إعادة العداد</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <TouchableOpacity style={[styles.nameCard, themeColors.card]} onPress={handleNextAllahName} activeOpacity={0.85}>
+          <Text style={[styles.nameCardHeader, themeColors.accentText, { fontSize: fontSize - 2 }]}>
+            ✨ من أسماء الله الحسنى
+          </Text>
+          <Text style={[styles.allahName, themeColors.text, { fontSize: fontSize + 6 }]}>
+            {ALLAH_NAMES[nameIndex].name}
+          </Text>
+          <Text style={[styles.allahMeaning, themeColors.subText, { fontSize: fontSize - 2 }]}>
+            {ALLAH_NAMES[nameIndex].meaning}
+          </Text>
+          <View style={styles.nameCardFooter}>
+            <Text style={[styles.tapHintText, themeColors.accentText, { fontSize: fontSize - 6 }]}>
+              (اضغط لرؤية اسم آخر)
+            </Text>
+            <TouchableOpacity 
+              onPress={(e) => {
+                e.stopPropagation();
+                navigation.navigate('الأذكار', { screen: 'AllahNamesList', params: { hapticEnabled, fontSize } });
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.allNamesLinkText, { fontSize: fontSize - 5 }]}>عرض القائمة الكاملة ←</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+
+        <View style={styles.gridContainer}>
+          <TouchableOpacity 
+            style={[styles.gridItem, themeColors.card]} 
+            onPress={() => navigation.navigate('الأذكار', { screen: 'DhikrList', params: { type: 'morning', title: 'أذكار الصباح', hapticEnabled, fontSize } })}
+          >
+            <Text style={styles.gridEmoji}>☀️</Text>
+            <Text style={[styles.gridTitle, themeColors.text, { fontSize: fontSize - 1 }]}>أذكار الصباح</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.gridItem, themeColors.card]} 
+            onPress={() => navigation.navigate('الأذكار', { screen: 'DhikrList', params: { type: 'evening', title: 'أذكار المساء', hapticEnabled, fontSize } })}
+          >
+            <Text style={styles.gridEmoji}>🌙</Text>
+            <Text style={[styles.gridTitle, themeColors.text, { fontSize: fontSize - 1 }]}>أذكار المساء</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.gridItem, themeColors.card]} 
+            onPress={() => navigation.navigate('السبحة')}
+          >
+            <Text style={styles.gridEmoji}>📿</Text>
+            <Text style={[styles.gridTitle, themeColors.text, { fontSize: fontSize - 1 }]}>السبحة الحرة</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.gridItem, themeColors.card]} 
+            onPress={openWhatsApp}
+          >
+            <Text style={styles.gridEmoji}>💬</Text>
+            <Text style={[styles.gridTitle, themeColors.text, { fontSize: fontSize - 1 }]}>تواصل معنا</Text>
+          </TouchableOpacity>
+        </View>
+
+      </ScrollView>
+    </ExactImagePatternWall>
+  );
+}
+
+async function logStat(key: 'tasbeeh' | 'dhikr' | 'ayah' | 'prayer', countToAdd = 1) {
+  try {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const storageKey = `@stats_${todayStr}`;
+    const dataStr = await AsyncStorage.getItem(storageKey);
+    let dayData = dataStr ? JSON.parse(dataStr) : { tasbeeh: 0, dhikr: 0, ayah: 0, prayer: 0 };
+    dayData[key] = Math.max(0, (dayData[key] || 0) + countToAdd);
+    await AsyncStorage.setItem(storageKey, JSON.stringify(dayData));
+  } catch (e) {}
+}
+
+function StatsScreen({ navigation, route }: { navigation: any, route: any }) {
+  const { fontSize } = route.params || { fontSize: 22 };
+  const { isDarkMode } = useContext(ThemeContext);
+  const themeColors = isDarkMode ? heritageDarkTheme : heritageLightTheme;
+  const [weekData, setWeekData] = useState<{ date: string; label: string; total: number; details: { tasbeeh: number; dhikr: number; ayah: number; prayer: number } }[]>([]);
+  const [totalWeekCount, setTotalWeekCount] = useState(0);
+  const [selectedDayModal, setSelectedDayModal] = useState<any>(null);
+
+  useEffect(() => {
+    (async () => {
+      const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+      const today = new Date();
+      let calculatedDays = [];
+      let grandTotal = 0;
+
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        const dayName = days[d.getDay()];
+
+        const dataStr = await AsyncStorage.getItem(`@stats_${dateStr}`);
+        const dayObj = dataStr ? JSON.parse(dataStr) : { tasbeeh: 0, dhikr: 0, ayah: 0, prayer: 0 };
+        const daySum = (dayObj.tasbeeh || 0) + (dayObj.dhikr || 0) + (dayObj.ayah || 0) + (dayObj.prayer || 0);
+
+        grandTotal += daySum;
+        calculatedDays.push({ date: dayName, label: dateStr, total: daySum, details: dayObj });
+      }
+
+      setWeekData(calculatedDays);
+      setTotalWeekCount(grandTotal);
+    })();
+  }, []);
+
+  return (
+    <ExactImagePatternWall isDarkMode={isDarkMode}>
+      <Animated.ScrollView entering={FadeIn.duration(400)} contentContainerStyle={{ padding: 15 }}>
+        <SeniorBackArrow onPress={() => navigation.goBack()} isDarkMode={isDarkMode} />
+        <HeritageArchBanner title="الإحصائيات الأسبوعية" textColor={themeColors.text.color} isDarkMode={isDarkMode} />
+        
+        <View style={[styles.mainHeaderCard, themeColors.card, { padding: 20 }]}>
+          <Text style={[styles.allahName, themeColors.accentText, { fontSize: fontSize + 8 }]}>
+            {formatArabicNumbers(totalWeekCount)}
+          </Text>
+          <Text style={[styles.dateText, themeColors.text, { fontSize: fontSize - 1, fontWeight: 'bold' }]}>
+            إجمالي التفاعلات والصلوات هذا الأسبوع
+          </Text>
+          <Text style={[themeColors.subText, { fontSize: fontSize - 5, marginTop: 4 }]}>
+            (اضغط على أي يوم أدناه لرؤية تفاصيل الأنشطة)
+          </Text>
+        </View>
+
+        <View style={[styles.verseCard, themeColors.card]}>
+          <Text style={[styles.verseBadgeTitle, themeColors.accentText, { fontSize: fontSize - 2, marginBottom: 15 }]}>
+            📊 حصيلة الأيام والنسبة المئوية
+          </Text>
+          {weekData.map((item, index) => {
+            const percentage = totalWeekCount > 0 ? Math.round((item.total / totalWeekCount) * 100) : 0;
+            return (
+              <TouchableOpacity 
+                key={index} 
+                style={{ marginBottom: 14, paddingVertical: 4 }} 
+                onPress={() => setSelectedDayModal(item)}
+                activeOpacity={0.7}
+              >
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text style={[themeColors.text, { fontSize: fontSize - 2, fontWeight: 'bold' }]}>{item.date} ({item.label})</Text>
+                  <Text style={[themeColors.subText, { fontSize: fontSize - 3 }]}>
+                    {formatArabicNumbers(item.total)} تفاعل ({formatArabicNumbers(percentage)}%)
+                  </Text>
+                </View>
+                <View style={{ height: 10, backgroundColor: 'rgba(212,163,115,0.15)', borderRadius: 5, overflow: 'hidden' }}>
+                  <View style={{ width: `${percentage}%`, height: '100%', backgroundColor: '#D4A373', borderRadius: 5 }} />
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <Modal visible={selectedDayModal !== null} transparent={true} animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, themeColors.card]}>
+              <Text style={[styles.modalTitle, themeColors.text, { fontSize: fontSize + 2 }]}>
+                تفاصيل نشاط يوم {selectedDayModal?.date}
+              </Text>
+              <Text style={[themeColors.subText, { textAlign: 'center', marginBottom: 15, fontSize: fontSize - 4 }]}>
+                {selectedDayModal?.label}
+              </Text>
+
+              <View style={{ width: '100%', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(212,163,115,0.2)', flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={[themeColors.text, { fontSize: fontSize - 2 }]}>🕌 صلوات ونوافل أُديت:</Text>
+                <Text style={[themeColors.accentText, { fontSize: fontSize - 2, fontWeight: 'bold' }]}>{formatArabicNumbers(selectedDayModal?.details.prayer || 0)}</Text>
+              </View>
+
+              <View style={{ width: '100%', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(212,163,115,0.2)', flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={[themeColors.text, { fontSize: fontSize - 2 }]}>📿 تسبيحات حرة وسريعة:</Text>
+                <Text style={[themeColors.accentText, { fontSize: fontSize - 2, fontWeight: 'bold' }]}>{formatArabicNumbers(selectedDayModal?.details.tasbeeh || 0)}</Text>
+              </View>
+
+              <View style={{ width: '100%', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(212,163,115,0.2)', flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={[themeColors.text, { fontSize: fontSize - 2 }]}>📖 أذكار تم إنجازها:</Text>
+                <Text style={[themeColors.accentText, { fontSize: fontSize - 2, fontWeight: 'bold' }]}>{formatArabicNumbers(selectedDayModal?.details.dhikr || 0)}</Text>
+              </View>
+
+              <View style={{ width: '100%', paddingVertical: 8, marginBottom: 15, flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={[themeColors.text, { fontSize: fontSize - 2 }]}>📌 آيات تم تلاوتها/تأملها:</Text>
+                <Text style={[themeColors.accentText, { fontSize: fontSize - 2, fontWeight: 'bold' }]}>{formatArabicNumbers(selectedDayModal?.details.ayah || 0)}</Text>
+              </View>
+
+              <TouchableOpacity style={styles.closeModalBtn} onPress={() => setSelectedDayModal(null)}>
+                <Text style={styles.closeModalBtnText}>إغلاق</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+      </Animated.ScrollView>
+    </ExactImagePatternWall>
+  );
+}
+
+function DhikrCard({ dhikr, onPresItem, isDarkMode, type, hapticEnabled, fontSize }: { dhikr: Dhikr, onPresItem: (id: string) => void, isDarkMode: boolean, type: string, hapticEnabled: boolean, fontSize: number }) {
+  const themeColors = isDarkMode ? heritageDarkTheme : heritageLightTheme;
+  const scale = useSharedValue(1);
+
+  const animatedCardStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressCard = async () => {
+    if (hapticEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    scale.value = withSequence(withTiming(0.97, { duration: 60 }), withTiming(1, { duration: 60 }));
+    await logStat('dhikr', 1);
+    onPresItem(dhikr.id);
+  };
+
+  const getExitingAnimation = (t: string) => {
+    switch (t) {
+      case 'morning':
+      case 'waking':
+        return SlideOutRight.duration(150);
+      case 'evening':
+      case 'sleep':
+        return SlideOutLeft.duration(150);
+      case 'prayer':
+      case 'home':
+        return SlideOutUp.duration(150);
+      default:
+        return SlideOutRight.duration(150);
+    }
+  };
+
+  const exitingAnimation = getExitingAnimation(type);
+
+  return (
+    <Animated.View exiting={exitingAnimation} layout={Layout.springify().duration(150)}>
+      <TouchableOpacity activeOpacity={0.9} onPress={handlePressCard}>
+        <Animated.View style={[styles.card, themeColors.card, animatedCardStyle, { padding: fontSize + 2 }]}>
+          <Text style={[styles.dhikrText, themeColors.text, { fontSize, lineHeight: fontSize * 1.5 }]}>{dhikr.text}</Text>
+          {dhikr.reward ? (
+            <Text style={[styles.rewardText, themeColors.subText, { fontSize: fontSize - 3 }]}>فضل الذكر: {dhikr.reward}</Text>
+          ) : null}
+          <View style={[styles.counterBadge, themeColors.badge]}>
+            <Text style={[styles.counterText, themeColors.counterText, { fontSize: fontSize - 3 }]}>متبقي: {formatArabicNumbers(dhikr.count)}</Text>
+          </View>
+        </Animated.View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+function DhikrListScreen({ navigation, route }: { navigation: any, route: any }) {
+  const { type, hapticEnabled, fontSize } = route.params;
+  const { isDarkMode } = useContext(ThemeContext);
+  const storageKey = `@adhkar_progress_${type}`;
+  const initialData = adhkarData[type as keyof typeof adhkarData] || adhkarData.morning;
+  
+  const [adhkarList, setAdhkarList] = useState<Dhikr[]>(initialData);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const themeColors = isDarkMode ? heritageDarkTheme : heritageLightTheme;
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const savedData = await AsyncStorage.getItem(storageKey);
+        let currentList = savedData ? JSON.parse(savedData) : initialData;
+
+        const now = new Date();
+        if (type === 'morning' || type === 'evening') {
+          const todayDateStr = now.toISOString().split('T')[0];
+          const savedDate = await AsyncStorage.getItem(`${storageKey}_date`);
+          if (savedDate !== todayDateStr) {
+            currentList = initialData;
+            await AsyncStorage.setItem(storageKey, JSON.stringify(initialData));
+            await AsyncStorage.setItem(`${storageKey}_date`, todayDateStr);
+          }
+        } else if (type === 'home' || type === 'prayer' || type === 'sleep' || type === 'waking') {
+          const currentHour = now.getHours().toString();
+          const savedHour = await AsyncStorage.getItem(`${storageKey}_hour`);
+          if (savedHour !== currentHour) {
+            currentList = initialData;
+            await AsyncStorage.setItem(storageKey, JSON.stringify(initialData));
+            await AsyncStorage.setItem(`${storageKey}_hour`, currentHour);
+          }
+        }
+
+        setAdhkarList(currentList);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoaded(true);
+      }
+    })();
+  }, [type]);
+
+  const handlePress = async (id: string) => {
+    const updatedList = adhkarList.map(dhikr => {
+      if (dhikr.id === id && dhikr.count > 0) return { ...dhikr, count: dhikr.count - 1 };
+      return dhikr;
+    });
+    setAdhkarList(updatedList);
+    await AsyncStorage.setItem(storageKey, JSON.stringify(updatedList));
+  };
+
+  const resetProgress = async () => {
+    if (hapticEnabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setAdhkarList(initialData);
+    await AsyncStorage.setItem(storageKey, JSON.stringify(initialData));
+  };
+
+  if (!isLoaded) return null;
+  const allCompleted = adhkarList.every(dhikr => dhikr.count === 0);
+
+  return (
+    <ExactImagePatternWall isDarkMode={isDarkMode}>
+      <Animated.View entering={FadeIn} style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={{ padding: 15 }}>
+          <SeniorBackArrow onPress={() => navigation.goBack()} isDarkMode={isDarkMode} />
+          <HeritageArchBanner title={route.params.title || 'الأذكار'} textColor={themeColors.text.color} isDarkMode={isDarkMode} />
+          {allCompleted ? (
+            <View style={styles.completionContainer}>
+              <Text style={styles.completionEmoji}>🌟</Text>
+              <Text style={[styles.completionTitle, themeColors.text, { fontSize: fontSize + 2 }]}>تقبل الله طاعتك</Text>
+              <Text style={[styles.completionSubtitle, themeColors.subText, { fontSize: fontSize - 2 }]}>بارك الله في وقتك، وأدام عليك نور ذكره وطاعته.</Text>
+              <TouchableOpacity style={[styles.resetButton, themeColors.circleBtn]} onPress={resetProgress}>
+                <Text style={[styles.resetButtonText, themeColors.circleText, { fontSize: fontSize - 2 }]}>إعادة الورد من جديد</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            adhkarList.map((dhikr) => {
+              if (dhikr.count === 0) return null;
+              return <DhikrCard key={dhikr.id} dhikr={dhikr} onPresItem={handlePress} isDarkMode={isDarkMode} type={type} hapticEnabled={hapticEnabled} fontSize={fontSize} />;
+            })
+          )}
+        </ScrollView>
+      </Animated.View>
+    </ExactImagePatternWall>
+  );
+}
+
+function AllahNamesListScreen({ navigation, route }: { navigation: any, route: any }) {
+  const { fontSize } = route.params || { fontSize: 22 };
+  const { isDarkMode } = useContext(ThemeContext);
+  const themeColors = isDarkMode ? heritageDarkTheme : heritageLightTheme;
+
+  const shareAllahName = async (name: string, meaning: string) => {
+    try {
+      await Share.share({ message: `من أسماء الله الحسنى:\n✨ ${name}\nالمعنى: ${meaning}\n\n[تطبيق مسرى المسلم]` });
+    } catch (e) {}
+  };
+
+  return (
+    <ExactImagePatternWall isDarkMode={isDarkMode}>
+      <Animated.ScrollView entering={FadeIn.duration(400)} contentContainerStyle={{ padding: 15 }}>
+        <SeniorBackArrow onPress={() => navigation.goBack()} isDarkMode={isDarkMode} />
+        <HeritageArchBanner title="أسماء الله الحسنى" textColor={themeColors.text.color} isDarkMode={isDarkMode} />
+        <Text style={[styles.allahListSubtitle, themeColors.subText, { fontSize: fontSize - 4 }]}>
+          قائمة أسماء الله الحسنى ومعانيها العطرة للتأمل والذكر
+        </Text>
+        {ALLAH_NAMES.map((item) => (
+          <View key={item.id} style={[styles.allahListItemCard, themeColors.card, { padding: fontSize + 2 }]}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => shareAllahName(item.name, item.meaning)} style={styles.shareBtnEnhanced}>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#D4A373' }}>مشاركة 🔗</Text>
+              </TouchableOpacity>
+              <Text style={[styles.allahListItemName, themeColors.accentText, { fontSize: fontSize + 2 }]}>{item.name}</Text>
+            </View>
+            <Text style={[styles.allahListItemMeaning, themeColors.text, { fontSize: fontSize - 2, lineHeight: (fontSize - 2) * 1.5, marginTop: 4 }]}>{item.meaning}</Text>
+          </View>
+        ))}
+      </Animated.ScrollView>
+    </ExactImagePatternWall>
+  );
+}
+
+function LibraryScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, hapticEnabled: boolean, fontSize: number }) {
+  const { isDarkMode } = useContext(ThemeContext);
+  const themeColors = isDarkMode ? heritageDarkTheme : heritageLightTheme;
+
+  return (
+    <ExactImagePatternWall isDarkMode={isDarkMode}>
+      <Animated.ScrollView entering={FadeIn.duration(400)} contentContainerStyle={{ padding: 15 }}>
+        <HeritageArchBanner title="مكتبة الأذكار" textColor={themeColors.text.color} isDarkMode={isDarkMode} />
+        <View style={styles.menuContainer}>
+          <TouchableOpacity style={[styles.menuCard, themeColors.card]} onPress={() => navigation.navigate('DhikrList', { type: 'morning', title: 'أذكار الصباح', hapticEnabled, fontSize })}>
+            <Text style={[styles.menuTitle, themeColors.text, { fontSize: fontSize + 2 }]}>☀️ أذكار الصباح</Text>
+            <Text style={[styles.menuSubtitle, themeColors.subText, { fontSize: fontSize - 2 }]}>حصن نفسك مع إشراقة كل يوم</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.menuCard, themeColors.card]} onPress={() => navigation.navigate('DhikrList', { type: 'evening', title: 'أذكار المساء', hapticEnabled, fontSize })}>
+            <Text style={[styles.menuTitle, themeColors.text, { fontSize: fontSize + 2 }]}>🌙 أذكار المساء</Text>
+            <Text style={[styles.menuSubtitle, themeColors.subText, { fontSize: fontSize - 2 }]}>أحصن حصونك عند الغروب</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.menuCard, themeColors.card]} onPress={() => navigation.navigate('DhikrList', { type: 'prayer', title: 'أذكار ما بعد الصلاة', hapticEnabled, fontSize })}>
+            <Text style={[styles.menuTitle, themeColors.text, { fontSize: fontSize + 2 }]}>🕌 أذكار ما بعد الصلاة</Text>
+            <Text style={[styles.menuSubtitle, themeColors.subText, { fontSize: fontSize - 2 }]}>السنن والمأثورات بعد الصلوات المفروضة</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.menuCard, themeColors.card]} onPress={() => navigation.navigate('DhikrList', { type: 'sleep', title: 'أذكار النوم', hapticEnabled, fontSize })}>
+            <Text style={[styles.menuTitle, themeColors.text, { fontSize: fontSize + 2 }]}>🛌 أذكار النوم</Text>
+            <Text style={[styles.menuSubtitle, themeColors.subText, { fontSize: fontSize - 2 }]}>حصن ليلتك قبل الخلود إلى النوم</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.menuCard, themeColors.card]} onPress={() => navigation.navigate('DhikrList', { type: 'waking', title: 'أذكار الاستيقاظ', hapticEnabled, fontSize })}>
+            <Text style={[styles.menuTitle, themeColors.text, { fontSize: fontSize + 2 }]}>🌅 أذكار الاستيقاظ</Text>
+            <Text style={[styles.menuSubtitle, themeColors.subText, { fontSize: fontSize - 2 }]}>ابدأ يومك بذكر الله وحمده</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.menuCard, themeColors.card]} onPress={() => navigation.navigate('DhikrList', { type: 'home', title: 'أذكار المنزل', hapticEnabled, fontSize })}>
+            <Text style={[styles.menuTitle, themeColors.text, { fontSize: fontSize + 2 }]}>🚪 أذكار المنزل</Text>
+            <Text style={[styles.menuSubtitle, themeColors.subText, { fontSize: fontSize - 2 }]}>تحصين البيت عند الدخول والخروج</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.menuCard, themeColors.card]} onPress={() => navigation.navigate('AllahNamesList', { fontSize })}>
+            <Text style={[styles.menuTitle, themeColors.text, { fontSize: fontSize + 2 }]}>✨ أسماء الله الحسنى</Text>
+            <Text style={[styles.menuSubtitle, themeColors.subText, { fontSize: fontSize - 2 }]}>استعرض القائمة الكاملة والمعاني العطرة</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.menuCard, themeColors.card]} onPress={() => navigation.navigate('StatsScreen', { fontSize })}>
+            <Text style={[styles.menuTitle, themeColors.text, { fontSize: fontSize + 2 }]}>📊 الإحصائيات الأسبوعية</Text>
+            <Text style={[styles.menuSubtitle, themeColors.subText, { fontSize: fontSize - 2 }]}>تابع حصيلة أذكارك ونشاطك الروحي</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.ScrollView>
+    </ExactImagePatternWall>
+  );
+}
+
+function SebhaScreen({ hapticEnabled, fontSize }: { hapticEnabled: boolean, fontSize: number }) {
+  const [count, setCount] = useState(0);
+  const { isDarkMode } = useContext(ThemeContext);
+  const themeColors = isDarkMode ? heritageDarkTheme : heritageLightTheme;
+
+  const handleTasbeeh = async () => {
+    if (hapticEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setCount(prev => prev + 1);
+    await logStat('tasbeeh', 1);
+  };
+
+  return (
+    <ExactImagePatternWall isDarkMode={isDarkMode}>
+      <Animated.View entering={FadeIn.duration(400)} style={{ flex: 1, padding: 15 }}>
+        <HeritageArchBanner title="المسبحة الرقمية" textColor={themeColors.text.color} isDarkMode={isDarkMode} />
+        <View style={[styles.centerScreen, { flex: 1 }]}>
+          <Text style={[styles.sebhaLabel, themeColors.text, { fontSize: fontSize + 2 }]}>سبحة التسبيح الحرة</Text>
+          
+          <TouchableOpacity onPress={handleTasbeeh} activeOpacity={0.85}>
+            <LinearGradient
+              colors={['#E5B279', '#C8935E']}
+              style={[styles.bigSebhaCircle, { width: fontSize * 8, height: fontSize * 8, borderRadius: (fontSize * 8) / 2 }]}
+            >
+              <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                <Svg height="100%" width="100%">
+                  <Defs>
+                    <Pattern id="bigCirclePattern" width="22" height="22" patternUnits="userSpaceOnUse">
+                      <Circle cx="11" cy="11" r="3" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
+                      <Path d="M11 0 L22 11 L11 22 L0 11 Z" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="0.8" />
+                    </Pattern>
+                  </Defs>
+                  <Rect width="100%" height="100%" fill="url(#bigCirclePattern)" />
+                </Svg>
+              </View>
+              <Text style={[styles.bigSebhaNumber, themeColors.circleText, { fontSize: fontSize * 2 }]}>{formatArabicNumbers(count)}</Text>
+              <Text style={[styles.bigSebhaHint, themeColors.circleSubText, { fontSize: fontSize - 8 }]}>اضغط هنا للتسبيح</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.resetSebhaBtn} onPress={() => setCount(0)}>
+            <Text style={[styles.resetSebhaText, { fontSize: fontSize - 3 }]}>تصفير العداد</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+    </ExactImagePatternWall>
+  );
+}
+
+// ==========================================
+// 🛠️ دوال مساعدة لحساب الوقت، الإقامة، والسنن
+// ==========================================
+const getCountdownText = (targetTimeStr: string) => {
+  if (!targetTimeStr) return '';
+  const now = new Date();
+  const [targetHours, targetMins] = targetTimeStr.split(':').map(Number);
+  
+  const target = new Date();
+  target.setHours(targetHours, targetMins, 0, 0);
+
+  if (target.getTime() <= now.getTime()) {
+    target.setDate(target.getDate() + 1);
+  }
+
+  const diffMs = target.getTime() - now.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const hours = Math.floor(diffMins / 60);
+  const mins = diffMins % 60;
+
+  if (hours > 0) {
+    return `متبقي ${formatArabicNumbers(hours)}س و ${formatArabicNumbers(mins)}د`;
+  }
+  return `متبقي ${formatArabicNumbers(mins)}د`;
+};
+
+const getDuhaTimes = (sunriseStr: string, dhuhrStr: string) => {
+  if (!sunriseStr || !dhuhrStr) return { start: '--:--', end: '--:--', rawStart: 0, rawEnd: 0 };
+  const [sH, sM] = sunriseStr.split(':').map(Number);
+  const [dH, dM] = dhuhrStr.split(':').map(Number);
+  
+  const startTotal = sH * 60 + sM + 15;
+  const endTotal = dH * 60 + dM - 15;
+  
+  const startH = String(Math.floor(startTotal / 60)).padStart(2, '0');
+  const startM = String(startTotal % 60).padStart(2, '0');
+  const endH = String(Math.floor(endTotal / 60)).padStart(2, '0');
+  const endM = String(endTotal % 60).padStart(2, '0');
+  
+  return {
+    start: formatArabicNumbers(`${startH}:${startM}`),
+    end: formatArabicNumbers(`${endH}:${endM}`),
+    rawStart: startTotal,
+    rawEnd: endTotal,
+  };
+};
+
+const getPrayerStatus = (timings: any) => {
+  if (!timings) return null;
+
+  const prayers = [
+    { name: 'الفجر', timeStr: timings.Fajr, iqamaMins: 20 },
+    { name: 'الظهر', timeStr: timings.Dhuhr, iqamaMins: 15 },
+    { name: 'العصر', timeStr: timings.Asr, iqamaMins: 15 },
+    { name: 'المغرب', timeStr: timings.Maghrib, iqamaMins: 10 },
+    { name: 'العشاء', timeStr: timings.Isha, iqamaMins: 15 },
+  ];
+
+  const now = new Date();
+
+  for (const p of prayers) {
+    const [h, m] = p.timeStr.split(':').map(Number);
+    const pTime = new Date();
+    pTime.setHours(h, m, 0, 0);
+    const iqamaTime = new Date(pTime.getTime() + p.iqamaMins * 60 * 1000);
+
+    if (now.getTime() >= pTime.getTime() && now.getTime() < iqamaTime.getTime()) {
+      const diffSec = Math.floor((iqamaTime.getTime() - now.getTime()) / 1000);
+      const remM = Math.floor(diffSec / 60);
+      const remS = diffSec % 60;
+      return {
+        isIqama: true,
+        name: p.name,
+        time: p.timeStr,
+        title: `حان الآن وقت صلاة ${p.name} 🕌`,
+        countdown: `الإقامة بعد: ${formatArabicNumbers(remM)} دقيقة و ${formatArabicNumbers(remS)} ثانية`,
+        silentNote: '🔕 يُرجى وضع الهاتف على الصامت في المسجد',
+      };
+    }
+  }
+
+  for (const p of prayers) {
+    const [h, m] = p.timeStr.split(':').map(Number);
+    const pDate = new Date();
+    pDate.setHours(h, m, 0, 0);
+
+    if (pDate.getTime() > now.getTime()) {
+      const diffMs = pDate.getTime() - now.getTime();
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const hours = Math.floor(diffMins / 60);
+      const mins = diffMins % 60;
+      const countdown = hours > 0
+        ? `متبقي ${formatArabicNumbers(hours)} ساعة و ${formatArabicNumbers(mins)} دقيقة`
+        : `متبقي ${formatArabicNumbers(mins)} دقيقة`;
+
+      return {
+        isIqama: false,
+        name: p.name,
+        time: p.timeStr,
+        title: `أقرب صلاة: ${p.name} (${formatArabicNumbers(p.timeStr)})`,
+        countdown: `⏱️ ${countdown}`,
+        silentNote: null,
+      };
+    }
+  }
+
+  const [fH, fM] = timings.Fajr.split(':').map(Number);
+  const tomorrowFajr = new Date();
+  tomorrowFajr.setDate(tomorrowFajr.getDate() + 1);
+  tomorrowFajr.setHours(fH, fM, 0, 0);
+
+  const diffMs = tomorrowFajr.getTime() - now.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const hours = Math.floor(diffMins / 60);
+  const mins = diffMins % 60;
+  const countdown = hours > 0
+    ? `متبقي ${formatArabicNumbers(hours)} ساعة و ${formatArabicNumbers(mins)} دقيقة`
+    : `متبقي ${formatArabicNumbers(mins)} دقيقة`;
+
+  return {
+    isIqama: false,
+    name: 'الفجر',
+    time: timings.Fajr,
+    title: `أقرب صلاة: الفجر (${formatArabicNumbers(timings.Fajr)})`,
+    countdown: `⏱️ ${countdown}`,
+    silentNote: null,
+  };
+};
+
+const calculateLastThirdOfNight = (maghribStr: string, fajrStr: string) => {
+  if (!maghribStr || !fajrStr) return { start: '--:--', remaining: '--' };
+
+  const [mHours, mMins] = maghribStr.split(':').map(Number);
+  const [fHours, fMins] = fajrStr.split(':').map(Number);
+
+  const now = new Date();
+
+  const maghribDate = new Date();
+  maghribDate.setHours(mHours, mMins, 0, 0);
+
+  const fajrDate = new Date();
+  fajrDate.setHours(fHours, fMins, 0, 0);
+  if (fajrDate <= maghribDate) {
+    fajrDate.setDate(fajrDate.getDate() + 1);
+  }
+
+  if (now.getHours() < fHours) {
+    maghribDate.setDate(maghribDate.getDate() - 1);
+    fajrDate.setDate(fajrDate.getDate() - 1);
+  }
+
+  const nightDurationMs = fajrDate.getTime() - maghribDate.getTime();
+  const thirdMs = nightDurationMs / 3;
+
+  const lastThirdStartDate = new Date(fajrDate.getTime() - thirdMs);
+
+  const startH = String(lastThirdStartDate.getHours()).padStart(2, '0');
+  const startM = String(lastThirdStartDate.getMinutes()).padStart(2, '0');
+  const startStr = `${startH}:${startM}`;
+
+  let remaining = '';
+  if (now.getTime() < lastThirdStartDate.getTime()) {
+    const diffMs = lastThirdStartDate.getTime() - now.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const h = Math.floor(diffMins / 60);
+    const m = diffMins % 60;
+    remaining = `يبدأ بعد ${h > 0 ? `${formatArabicNumbers(h)}س و ` : ''}${formatArabicNumbers(m)}د`;
+  } else if (now.getTime() >= lastThirdStartDate.getTime() && now.getTime() < fajrDate.getTime()) {
+    const remMs = fajrDate.getTime() - now.getTime();
+    const remMins = Math.floor(remMs / (1000 * 60));
+    const h = Math.floor(remMins / 60);
+    const m = remMins % 60;
+    remaining = `الثلث الأخير جاري الآن 🌙 (متبقي ${h > 0 ? `${formatArabicNumbers(h)}س و ` : ''}${formatArabicNumbers(m)}د)`;
+  } else {
+    remaining = 'انتهى مع أذان الفجر';
+  }
+
+  return { start: toEasternArabicNumerals(startStr), remaining };
+};
+
+function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapticEnabled: boolean }) {
+  const { isDarkMode } = useContext(ThemeContext);
+  const themeColors = isDarkMode ? heritageDarkTheme : heritageLightTheme;
+  const [timings, setTimings] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [qiblaDirection, setQiblaDirection] = useState<number | null>(null);
+  const [deviceHeading, setDeviceHeading] = useState<number>(0);
+  const [locationName, setLocationName] = useState<string>('جاري تحديد الموقع الحي...');
+  const [isAligned, setIsAligned] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [currentCoords, setCurrentCoords] = useState<{ lat: number; lon: number; dahriOffset: number } | null>(null);
+
+  const [, setTick] = useState(0);
+  const [completedPrayers, setCompletedPrayers] = useState<{ [key: string]: boolean }>({});
+  const prayerCardRef = useRef<View>(null);
+
+  const todayDateStr = new Date().toISOString().split('T')[0];
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await AsyncStorage.getItem(`@prayer_tracker_${todayDateStr}`);
+        if (saved) setCompletedPrayers(JSON.parse(saved));
+      } catch (e) {}
+    })();
+  }, [todayDateStr]);
+
+  const togglePrayerCheck = async (prayerKey: string) => {
+    if (hapticEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const willBeCompleted = !completedPrayers[prayerKey];
+    const updated = { ...completedPrayers, [prayerKey]: willBeCompleted };
+    setCompletedPrayers(updated);
+    await AsyncStorage.setItem(`@prayer_tracker_${todayDateStr}`, JSON.stringify(updated));
+    await logStat('prayer', willBeCompleted ? 1 : -1);
+  };
+
+  useEffect(() => {
+    const timer = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (currentCoords) {
+      applyDahriTimes(currentCoords.lat, currentCoords.lon, currentCoords.dahriOffset);
+    }
+  }, []);
+
+  useEffect(() => {
+    initializeLiveLocation();
+
+    let subscription: any;
+    (async () => {
+      try {
+        subscription = await Location.watchHeadingAsync(heading => {
+          if (heading && heading.trueHeading >= 0) {
+            setDeviceHeading(Math.round(heading.trueHeading));
+          } else if (heading && heading.magHeading >= 0) {
+            setDeviceHeading(Math.round(heading.magHeading));
+          }
+        });
+      } catch (e) {
+        Magnetometer.setUpdateInterval(100);
+        subscription = Magnetometer.addListener(data => {
+          let { x, y } = data;
+          let angle = Math.atan2(y, x) * (180 / Math.PI);
+          angle = angle >= 0 ? angle : angle + 360;
+          setDeviceHeading(Math.round(angle));
+        });
+      }
+    })();
+
+    return () => {
+      if (subscription && typeof subscription.remove === 'function') {
+        subscription.remove();
+      }
+    };
+  }, []);
+
+  const initializeLiveLocation = async () => {
+    try {
+      const savedCity = await AsyncStorage.getItem('@user_selected_city');
+      if (savedCity) {
+        const cityObj = JSON.parse(savedCity);
+        if (cityObj.lat === null) {
+          await fetchLiveGPSAndTimes(true);
+        } else {
+          setLocationName(cityObj.name);
+          applyDahriTimes(cityObj.lat, cityObj.lon, cityObj.dahriOffset);
+          await updateLiveQiblaOnly();
+        }
+        return;
+      }
+
+      await fetchLiveGPSAndTimes(false);
+    } catch (e) {
+      await fetchLiveGPSAndTimes(false);
+    }
+  };
+
+  const updateLiveQiblaOnly = async () => {
+    try {
+      let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      calculateQibla(location.coords.latitude, location.coords.longitude);
+    } catch (e) {
+      calculateQibla(31.7683, 35.2137);
+    }
+  };
+
+  const fetchLiveGPSAndTimes = async (isManualGPS: boolean) => {
+    try {
+      setLoading(true);
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setLocationName('تم رفض إذن الموقع (افتراضي: القدس)');
+        applyDahriTimes(31.7683, 35.2137, 0);
+        calculateQibla(31.7683, 35.2137);
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const { latitude, longitude } = location.coords;
+
+      let reverse = await Location.reverseGeocodeAsync({ latitude, longitude });
+      let currentCityStr = 'الموقع الحالي (GPS حي)';
+      if (reverse && reverse.length > 0) {
+        currentCityStr = `${reverse[0].city || reverse[0].subregion || 'منطقة'} / ${reverse[0].country || ''}`;
+      }
+
+      const calculatedOffset = getDahriCityOffset(latitude, longitude);
+      setLocationName(currentCityStr);
+      applyDahriTimes(latitude, longitude, calculatedOffset);
+      calculateQibla(latitude, longitude);
+
+      if (isManualGPS) {
+        await AsyncStorage.setItem('@user_selected_city', JSON.stringify({ name: currentCityStr, lat: null, lon: null, dahriOffset: calculatedOffset }));
+      }
+    } catch (e) {
+      setLocationName('تعذر جلب الموقع الحي');
+      setLoading(false);
+    }
+  };
+
+  const selectCity = async (city: typeof PALESTINE_CITIES[0]) => {
+    setModalVisible(false);
+    if (city.lat === null) {
+      await fetchLiveGPSAndTimes(true);
+    } else {
+      setLocationName(city.name);
+      setLoading(true);
+      await AsyncStorage.setItem('@user_selected_city', JSON.stringify(city));
+      applyDahriTimes(city.lat, city.lon, city.dahriOffset);
+      await updateLiveQiblaOnly();
+    }
+  };
+
+  const applyDahriTimes = (lat: number, lon: number, customOffset?: number) => {
+    try {
+      setLoading(true);
+      const today = new Date();
+      const month = today.getMonth() + 1;
+      const day = today.getDate();
+
+      const monthArray = DAHRI_TIMES[month - 1] || DAHRI_TIMES[0];
+      const baseTimes = monthArray[Math.min(day - 1, monthArray.length - 1)] || ["05:00", "06:30", "11:45", "02:30", "05:00", "06:15"];
+
+      const dahriOffset = customOffset !== undefined ? customOffset : getDahriCityOffset(lat, lon);
+      const dstOffset = getPalestineDstOffset(today);
+
+      const totalOffset = Math.round(dahriOffset + dstOffset);
+      setCurrentCoords({ lat, lon, dahriOffset });
+
+      const newTimings = {
+        Fajr: addMinutesToTime(baseTimes[0], totalOffset, false),
+        Sunrise: addMinutesToTime(baseTimes[1], totalOffset, false),
+        Dhuhr: addMinutesToTime(baseTimes[2], totalOffset, false),
+        Asr: addMinutesToTime(baseTimes[3], totalOffset, true),
+        Maghrib: addMinutesToTime(baseTimes[4], totalOffset, true),
+        Isha: addMinutesToTime(baseTimes[5], totalOffset, true),
+      };
+
+      setTimings(newTimings);
+      scheduleAppNotifications(newTimings);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sharePrayerTimesImage = async () => {
+    let uri: string | null = null;
+    try {
+      if (!prayerCardRef.current) return;
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(requestAnimationFrame);
+
+      uri = await captureRef(prayerCardRef, { format: 'png', quality: 1, result: 'tmpfile' });
+      await Sharing.shareAsync(uri, { dialogTitle: 'مشاركة مواقيت الصلاة اليوم', mimeType: 'image/png' });
+    } catch (error) {
+      Alert.alert('خطأ', 'تعذر تجهيز صورة المواقيت للمشاركة.');
+    } finally {
+      if (uri) {
+        try { releaseCapture(uri); } catch (e) {}
+      }
+    }
+  };
+
+  const calculateQibla = (lat: number, lon: number) => {
+    const kaabaLat = 21.4225;
+    const kaabaLon = 39.8262;
+
+    const phi1 = (lat * Math.PI) / 180;
+    const phi2 = (kaabaLat * Math.PI) / 180;
+    const deltaLambda = ((kaabaLon - lon) * Math.PI) / 180;
+
+    const y = Math.sin(deltaLambda) * Math.cos(phi2);
+    const x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(deltaLambda);
+    let qibla = (Math.atan2(y, x) * 180) / Math.PI;
+    qibla = (qibla + 360) % 360;
+    setQiblaDirection(Math.round(qibla));
+  };
+
+  const needleRotation = qiblaDirection !== null ? (qiblaDirection - deviceHeading + 360) % 360 : 0;
+  
+  useEffect(() => {
+    if (qiblaDirection !== null) {
+      const diff = Math.abs(needleRotation > 180 ? 360 - needleRotation : needleRotation);
+      const isNowAligned = diff <= 4;
+      if (isNowAligned && !isAligned) {
+        setIsAligned(true);
+        if (hapticEnabled) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      } else if (!isNowAligned && isAligned) {
+        setIsAligned(false);
+      }
+    }
+  }, [needleRotation]);
+
+  const now = new Date();
+  const gregorianDateStr = formatArabicNumbers(now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
+  const hijriDateStr = formatArabicNumbers(getSafeHijriDate(now));
+  const duhaTimes = timings ? getDuhaTimes(timings.Sunrise, timings.Dhuhr) : { start: '--:--', end: '--:--', rawStart: 0, rawEnd: 0 };
+  const nightInfo = timings ? calculateLastThirdOfNight(timings.Maghrib, timings.Fajr) : { start: '--:--', remaining: '--' };
+  const prayerStatus = timings ? getPrayerStatus(timings) : null;
+
+  const totalCompletedCount = Object.values(completedPrayers).filter(Boolean).length;
+
+  const isDuhaPeriod = () => {
+    if (!timings) return false;
+    const [fH, fM] = timings.Fajr.split(':').map(Number);
+    const [dH, dM] = timings.Dhuhr.split(':').map(Number);
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+    const fajrMins = fH * 60 + fM;
+    const dhuhrMins = dH * 60 + dM;
+    return currentMins >= fajrMins && currentMins < dhuhrMins;
+  };
+
+  const showDuha = isDuhaPeriod();
+
+  const getDuhaStatusText = () => {
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+    if (currentMins < duhaTimes.rawStart) {
+      const diff = duhaTimes.rawStart - currentMins;
+      return `يبدأ وقت الضحى بعد ${formatArabicNumbers(diff)} دقيقة`;
+    } else if (currentMins >= duhaTimes.rawStart && currentMins < duhaTimes.rawEnd) {
+      return '☀️ وقت صلاة الضحى قائم الآن (صلاة الأوابين)';
+    } else {
+      return 'انتهى وقت الضحى (قارب وقت زوال الشمس)';
+    }
+  };
+
+  return (
+    <ExactImagePatternWall isDarkMode={isDarkMode}>
+      <View style={{ position: 'absolute', top: 0, left: 0, width: 1080, opacity: 0 }} pointerEvents="none" collapsable={false}>
+        <View ref={prayerCardRef} collapsable={false}>
+          <PrayerSharePage 
+            timings={timings}
+            locationName={locationName}
+            gregorianDate={gregorianDateStr}
+            hijriDate={hijriDateStr}
+            duhaTimes={duhaTimes}
+            nightInfo={nightInfo}
+          />
+        </View>
+      </View>
+
+      <Animated.ScrollView entering={FadeIn.duration(400)} contentContainerStyle={{ padding: 15 }}>
+        <HeritageArchBanner title="مواقيت الصلاة والقبلة" textColor={themeColors.text.color} isDarkMode={isDarkMode} />
+
+        <View style={[styles.locationCard, themeColors.card, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 15 }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.locationTitle, themeColors.subText, { fontSize: fontSize - 4 }]}>📍 الموقع الحالي (التوقيت الدهري):</Text>
+            <Text style={[styles.locationNameText, themeColors.text, { fontSize: fontSize - 1, fontWeight: 'bold' }]}>{locationName}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 6 }}>
+            <TouchableOpacity style={styles.changeCityBtn} onPress={sharePrayerTimesImage}>
+              <Text style={styles.changeCityBtnText}>مشاركة 📤</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.changeCityBtn, { backgroundColor: '#C8A875' }]} onPress={() => setModalVisible(true)}>
+              <Text style={styles.changeCityBtnText}>تغيير البلد</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={[styles.prayerCard, themeColors.card]}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Text style={[styles.prayerTitle, themeColors.accentText, { fontSize: fontSize }]}>مواقيت الصلاة وفق التقويم الدهري</Text>
+            <View style={styles.trackerBadgeMini}>
+              <Text style={styles.trackerBadgeMiniText}>
+                {formatArabicNumbers(totalCompletedCount)} / {formatArabicNumbers(7)} ✓
+              </Text>
+            </View>
+          </View>
+
+          {loading ? (
+            <ActivityIndicator size="large" color="#D4A373" style={{ marginVertical: 20 }} />
+          ) : timings ? (
+            <>
+              {prayerStatus && (
+                <View style={[styles.nextPrayerBanner, prayerStatus.isIqama && { borderColor: '#E5B279', backgroundColor: 'rgba(229,178,121,0.25)' }]}>
+                  <Text style={[styles.nextPrayerTitleText, { fontSize: fontSize }]}>
+                    {prayerStatus.title}
+                  </Text>
+                  <Text style={[styles.nextPrayerCountdownText, { fontSize: fontSize - 3 }]}>
+                    {prayerStatus.countdown}
+                  </Text>
+                  {prayerStatus.silentNote && (
+                    <Text style={styles.silentNoticeText}>{prayerStatus.silentNote}</Text>
+                  )}
+                </View>
+              )}
+
+              {[
+                { key: 'fajr', name: 'الفجر', time: timings.Fajr, showCountdown: true },
+                { key: 'sunrise', name: 'الشروق', time: timings.Sunrise, showCountdown: false },
+                { key: 'dhuhr', name: 'الظهر', time: timings.Dhuhr, showCountdown: true },
+                { key: 'asr', name: 'العصر', time: timings.Asr, showCountdown: true },
+                { key: 'maghrib', name: 'المغرب', time: timings.Maghrib, showCountdown: true },
+                { key: 'isha', name: 'العشاء', time: timings.Isha, showCountdown: true },
+              ].map((item) => (
+                <View key={item.key} style={styles.prayerRow}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    {item.key !== 'sunrise' && (
+                      <TouchableOpacity 
+                        onPress={() => togglePrayerCheck(item.key)} 
+                        style={[styles.checkSquareBtn, completedPrayers[item.key] && styles.checkSquareBtnActive]}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[styles.checkSquareText, completedPrayers[item.key] && styles.checkSquareTextActive]}>✓</Text>
+                      </TouchableOpacity>
+                    )}
+                    <View style={{ marginLeft: item.key !== 'sunrise' ? 10 : 0 }}>
+                      <Text style={[styles.prayerName, themeColors.text, { fontSize: fontSize - 2 }]}>
+                        {formatArabicNumbers(item.time)}
+                      </Text>
+                      {item.showCountdown && (
+                        <Text style={[themeColors.subText, { fontSize: fontSize - 6 }]}>
+                          {getCountdownText(item.time)}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                  <Text style={[styles.prayerTime, themeColors.text, { fontSize: fontSize - 2 }]}>
+                    {item.name}
+                  </Text>
+                </View>
+              ))}
+
+              <View style={[styles.sunnahContainer, themeColors.card]}>
+                <Text style={[styles.sunnahHeaderTitle, themeColors.accentText]}>✨ السنن والنوافل اليومية</Text>
+
+                <View style={styles.sunnahRow}>
+                  <TouchableOpacity 
+                    onPress={() => togglePrayerCheck('duha')} 
+                    style={[styles.checkSquareBtn, completedPrayers['duha'] && styles.checkSquareBtnActive]}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.checkSquareText, completedPrayers['duha'] && styles.checkSquareTextActive]}>✓</Text>
+                  </TouchableOpacity>
+                  <View style={{ flex: 1, alignItems: 'flex-end', marginLeft: 12 }}>
+                    <Text style={[themeColors.text, { fontSize: fontSize - 3, fontWeight: 'bold', textAlign: 'right' }]}>
+                      صلاة الضحى (صلاة الأوابين)
+                    </Text>
+                    <Text style={[themeColors.subText, { fontSize: fontSize - 5, textAlign: 'right', marginTop: 2 }]}>
+                      وقتها: من {duhaTimes.start} إلى {duhaTimes.end}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={[styles.sunnahRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+                  <TouchableOpacity 
+                    onPress={() => togglePrayerCheck('witr')} 
+                    style={[styles.checkSquareBtn, completedPrayers['witr'] && styles.checkSquareBtnActive]}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.checkSquareText, completedPrayers['witr'] && styles.checkSquareTextActive]}>✓</Text>
+                  </TouchableOpacity>
+                  <View style={{ flex: 1, alignItems: 'flex-end', marginLeft: 12 }}>
+                    <Text style={[themeColors.text, { fontSize: fontSize - 3, fontWeight: 'bold', textAlign: 'right' }]}>
+                      ركعة الوتر (ختام الليل)
+                    </Text>
+                    <Text style={[themeColors.subText, { fontSize: fontSize - 5, textAlign: 'right', marginTop: 2 }]}>
+                      وقتها: بعد صلاة العشاء وحتى أذان الفجر
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={[styles.card, themeColors.card, { marginTop: 15, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: '#D4A37355' }]}>
+                {showDuha ? (
+                  <>
+                    <Text style={[themeColors.accentText, { fontSize: fontSize - 1, fontWeight: 'bold', marginBottom: 4 }]}>
+                      ☀️ صلاة الضحى (النهار)
+                    </Text>
+                    <Text style={[themeColors.text, { fontSize: fontSize - 2 }]}>
+                      من {duhaTimes.start} إلى {duhaTimes.end}
+                    </Text>
+                    <Text style={[themeColors.subText, { fontSize: fontSize - 4, marginTop: 4 }]}>
+                      {getDuhaStatusText()}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={[themeColors.accentText, { fontSize: fontSize - 1, fontWeight: 'bold', marginBottom: 4 }]}>
+                      🌙 الثلث الأخير من الليل
+                    </Text>
+                    <Text style={[themeColors.text, { fontSize: fontSize - 2 }]}>
+                      يبدأ الساعة: {nightInfo.start}
+                    </Text>
+                    <Text style={[themeColors.subText, { fontSize: fontSize - 4, marginTop: 4 }]}>
+                      {nightInfo.remaining}
+                    </Text>
+                  </>
+                )}
+              </View>
+            </>
+          ) : (
+            <Text style={[styles.prayerTime, themeColors.text, { textAlign: 'center', fontSize: fontSize - 2 }]}>تعذر جلب المواقيت حالياً</Text>
+          )}
+        </View>
+
+        <View style={[styles.qiblaContainer, themeColors.card, { alignItems: 'center', paddingVertical: 25 }]}>
+          <Text style={[styles.qiblaHeader, themeColors.text, { fontSize: fontSize + 2 }]}>🧭 بوصلة القبلة المشرفة</Text>
+          <Text style={[styles.qiblaDesc, themeColors.subText, { fontSize: fontSize - 3, marginBottom: 15 }]}>
+            {qiblaDirection !== null ? `زاوية القبلة: ${formatArabicNumbers(qiblaDirection)}° (من موقعك الحي)` : 'جاري حساب اتجاه الكعبة...'}
+          </Text>
+
+          <View style={styles.ornateCompassOuterRing}>
+            <View style={styles.ornateCompassInnerRing}>
+              <View style={styles.compassCenterDot} />
+              <View style={[styles.compassNeedleContainer, { transform: [{ rotate: `${needleRotation}deg` }] }]}>
+                <View style={[styles.compassArrowHead, { borderBottomColor: isAligned ? '#D4A373' : '#C86D51' }]} />
+                <View style={[styles.compassArrowShaft, { backgroundColor: isAligned ? '#D4A373' : '#C86D51' }]} />
+              </View>
+            </View>
+          </View>
+
+          <Text style={[styles.alignmentStatus, { color: isAligned ? '#D4A373' : (isDarkMode ? '#B5A290' : '#7A6B5D'), fontSize: fontSize - 2, fontWeight: 'bold', marginTop: 15 }]}>
+            {isAligned ? '✨ تم استهداف القبلة بنجاح' : 'الرجاء توجيه الهاتف نحو السهم حتى يتحول للذهبي'}
+          </Text>
+        </View>
+
+        <Modal visible={modalVisible} animationType="slide" transparent={true}>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, themeColors.card]} >
+              <Text style={[styles.modalTitle, themeColors.text, { fontSize: fontSize + 2 }]}>اختر مدينتك أو منطقتك</Text>
+              <FlatList
+                data={PALESTINE_CITIES}
+                keyExtractor={(item) => item.name}
+                renderItem={({ item }) => (
+                  <TouchableOpacity style={styles.cityOption} onPress={() => selectCity(item)}>
+                    <Text style={[styles.cityOptionText, themeColors.text, { fontSize: fontSize - 1 }]}>{item.name}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+              <TouchableOpacity style={styles.closeModalBtn} onPress={() => setModalVisible(false)}>
+                <Text style={styles.closeModalBtnText}>إغلاق</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+      </Animated.ScrollView>
+    </ExactImagePatternWall>
+  );
+}
+
+function SettingsScreen({ hapticEnabled, setHapticEnabled, fontSize, setFontSize }: any) {
+  const { isDarkMode, setIsDarkMode } = useContext(ThemeContext);
+  const themeColors = isDarkMode ? heritageDarkTheme : heritageLightTheme;
+
+  return (
+    <ExactImagePatternWall isDarkMode={isDarkMode}>
+      <Animated.ScrollView entering={FadeIn.duration(400)} contentContainerStyle={{ padding: 15 }}>
+        <HeritageArchBanner title="الإعدادات والتفضيلات" textColor={themeColors.text.color} isDarkMode={isDarkMode} />
+        
+        <View style={styles.settingRow}><Text style={[styles.settingLabel, themeColors.text, { fontSize: fontSize - 2 }]}>الوضع الداكن / الفاتح</Text><Switch value={isDarkMode} onValueChange={setIsDarkMode} /></View>
+        <View style={[styles.settingRow, themeColors.card]}><Text style={[styles.settingLabel, themeColors.text, { fontSize: fontSize - 2 }]}>الاهتزاز اللمسي</Text><Switch value={hapticEnabled} onValueChange={setHapticEnabled} /></View>
+        
+        <View style={[styles.settingRowColumn, themeColors.card]}>
+          <Text style={[styles.settingLabel, themeColors.text, { marginBottom: 10, fontSize: fontSize - 2 }]}>حجم الخط الأساسي: {formatArabicNumbers(fontSize)}</Text>
+          <View style={styles.fontButtonsRow}>
+            <TouchableOpacity style={[styles.fontBtn, themeColors.circleBtn]} onPress={() => setFontSize(18)}><Text style={[styles.fontBtnText, themeColors.circleText]}>18</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.fontBtn, themeColors.circleBtn]} onPress={() => setFontSize(22)}><Text style={[styles.fontBtnText, themeColors.circleText]}>22</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.fontBtn, themeColors.circleBtn]} onPress={() => setFontSize(26)}><Text style={[styles.fontBtnText, themeColors.circleText]}>26</Text></TouchableOpacity>
+            <TouchableOpacity style={[styles.fontBtn, themeColors.circleBtn]} onPress={() => setFontSize(30)}><Text style={[styles.fontBtnText, themeColors.circleText]}>30</Text></TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={[styles.settingRowColumn, themeColors.card]}>
+          <Text style={[styles.settingLabel, themeColors.text, { marginBottom: 8, fontSize: fontSize - 2 }]}>سياسة الخصوصية</Text>
+          <Text style={[styles.policyText, themeColors.subText, { fontSize: fontSize - 4 }]}>هذا التطبيق لا يجمع أي بيانات شخصية للمستخدمين. جميع العدادات والتفضيلات تُحفظ محلياً لضمان الخصوصية التامة.</Text>
+        </View>
+      </Animated.ScrollView>
+    </ExactImagePatternWall>
+  );
+}
+
+function MainTabs({ hapticEnabled, fontSize, setHapticEnabled, setFontSize }: any) {
+  const { isDarkMode } = useContext(ThemeContext);
+
+  return (
+    <Tab.Navigator
+      screenOptions={({ navigation }: any) => ({
+        headerStyle: { backgroundColor: isDarkMode ? '#1E1B18' : '#FBF9F5' },
+        headerTintColor: isDarkMode ? '#D4A373' : '#6F4E37',
+        headerRight: () => (
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('الإعدادات')} 
+            style={{ marginRight: 15 }}
+          >
+            <Text style={{ fontSize: 22 }}>⚙️</Text>
+          </TouchableOpacity>
+        ),
+        tabBarStyle: { 
+          backgroundColor: isDarkMode ? '#1E1B18' : '#FBF9F5', 
+          borderTopColor: isDarkMode ? '#3A322A' : '#E6DCCH', 
+          height: 65, 
+          paddingBottom: 6,
+          paddingTop: 4,
+        },
+        tabBarItemStyle: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+        },
+        tabBarActiveTintColor: '#D4A373',
+        tabBarInactiveTintColor: isDarkMode ? '#8C7A6B' : '#8C7A6B',
+      })}
+    >
+      {/* 1. الرئيسية أولاً (أقصى اليمين في واجهات RTL) */}
+      <Tab.Screen name="الرئيسية" options={{ title: 'الرئيسية', tabBarIcon: () => <Text style={{ fontSize: 20 }}>🏠</Text> }}>
+        {(props) => <HomeScreen {...props} hapticEnabled={hapticEnabled} fontSize={fontSize} />}
+      </Tab.Screen>
+
+      {/* 2. المواقيت والقبلة */}
+      <Tab.Screen name="الصلاة والقبلة" options={{ title: 'الصلاة والقبلة', tabBarLabel: 'المواقيت', tabBarIcon: () => <Text style={{ fontSize: 20 }}>🕋</Text> }}>
+        {(props) => <PrayerTimesScreen fontSize={fontSize} hapticEnabled={hapticEnabled} />}
+      </Tab.Screen>
+
+      {/* 3. الأذكار والمكتبة */}
+      <Tab.Screen name="الأذكار" options={{ title: 'الأذكار', tabBarIcon: () => <Text style={{ fontSize: 20 }}>📖</Text> }}>
+        {(props) => <LibraryStack hapticEnabled={hapticEnabled} fontSize={fontSize} />}
+      </Tab.Screen>
+
+      {/* 4. السبحة الرقمية */}
+      <Tab.Screen name="السبحة" options={{ title: 'السبحة', tabBarIcon: () => <Text style={{ fontSize: 20 }}>📿</Text> }}>
+        {(props) => <SebhaScreen hapticEnabled={hapticEnabled} fontSize={fontSize} />}
+      </Tab.Screen>
+    </Tab.Navigator>
+  );
+}
+
+export default function App() {
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [hapticEnabled, setHapticEnabled] = useState(true);
+  const [fontSize, setFontSize] = useState(22);
+  const [appIsReady, setAppIsReady] = useState(false);
+
+  useEffect(() => {
+    async function prepare() {
+      try {
+        Notifications.requestPermissionsAsync();
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        setAppIsReady(true);
+      }
+    }
+
+    prepare();
+  }, []);
+
+  const onLayoutRootView = useCallback(async () => {
+    if (appIsReady) {
+      await SplashScreen.hideAsync();
+    }
+  }, [appIsReady]);
+
+  if (!appIsReady) {
+    return null;
+  }
+
+  return (
+    <ThemeContext.Provider value={{ isDarkMode, setIsDarkMode }}>
+      <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+        <NavigationContainer>
+          <RootStack.Navigator screenOptions={{ headerShown: false }}>
+            <RootStack.Screen name="MainTabs">
+              {(props) => <MainTabs {...props} hapticEnabled={hapticEnabled} fontSize={fontSize} setHapticEnabled={setHapticEnabled} setFontSize={setFontSize} />}
+            </RootStack.Screen>
+            <RootStack.Screen 
+              name="الإعدادات" 
+              options={{ 
+                headerShown: true, 
+                title: 'الإعدادات',
+                headerStyle: { backgroundColor: isDarkMode ? '#1E1B18' : '#FBF9F5' },
+                headerTintColor: isDarkMode ? '#D4A373' : '#6F4E37',
+                animation: 'slide_from_right',
+                contentStyle: { backgroundColor: isDarkMode ? '#14110E' : '#EFE7DA' }
+              }}
+            >
+              {(props) => <SettingsScreen {...props} hapticEnabled={hapticEnabled} setHapticEnabled={setHapticEnabled} fontSize={fontSize} setFontSize={setFontSize} />}
+            </RootStack.Screen>
+          </RootStack.Navigator>
+        </NavigationContainer>
+      </View>
+    </ThemeContext.Provider>
+  );
+}
+
+function LibraryStack({ hapticEnabled, fontSize }: any) {
+  const { isDarkMode } = useContext(ThemeContext);
+  return (
+    <Stack.Navigator 
+      screenOptions={{ 
+        headerShown: false,
+        animation: 'slide_from_right', 
+        contentStyle: { backgroundColor: isDarkMode ? '#14110E' : '#EFE7DA' }
+      }}
+    >
+      <Stack.Screen name="LibraryMain">
+        {(props) => <LibraryScreen {...props} hapticEnabled={hapticEnabled} fontSize={fontSize} />}
+      </Stack.Screen>
+      <Stack.Screen name="DhikrList" component={DhikrListScreen} />
+      <Stack.Screen name="AllahNamesList" component={AllahNamesListScreen} />
+      <Stack.Screen name="StatsScreen" component={StatsScreen} />
+    </Stack.Navigator>
+  );
+}
+
+const styles = StyleSheet.create({
+  canvasContainer: { flex: 1, width: '100%', height: '100%' },
+  heritageArchContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 15,
+    marginTop: 5,
+  },
+  heritageArchShape: {
+    borderWidth: 1.5,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    alignItems: 'center',
+    width: '100%',
+    alignSelf: 'stretch',
+    overflow: 'hidden',
+    shadowColor: '#D4A373',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  heritageArchTitleText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  locationCard: {
+    borderRadius: 20,
+    marginBottom: 15,
+    borderWidth: 1.5,
+    borderColor: '#D4A37344',
+  },
+  locationTitle: {},
+  locationNameText: {},
+  changeCityBtn: {
+    backgroundColor: '#D4A373',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  changeCityBtnText: {
+    color: '#1E1B18',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  nextPrayerBanner: {
+    backgroundColor: 'rgba(212, 163, 115, 0.18)',
+    borderWidth: 1.5,
+    borderColor: '#D4A373',
+    borderRadius: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  nextPrayerTitleText: {
+    fontWeight: 'bold',
+    color: '#D4A373',
+    textAlign: 'center',
+  },
+  nextPrayerCountdownText: {
+    color: '#E5B279',
+    fontWeight: '600',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  silentNoticeText: {
+    color: '#C86D51',
+    fontWeight: 'bold',
+    fontSize: 13,
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  trackerBadgeMini: {
+    backgroundColor: 'rgba(212,163,115,0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#D4A37366',
+  },
+  trackerBadgeMiniText: {
+    color: '#D4A373',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  checkSquareBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 1.8,
+    borderColor: '#D4A373',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  checkSquareBtnActive: {
+    backgroundColor: '#D4A373',
+  },
+  checkSquareText: {
+    color: 'transparent',
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  checkSquareTextActive: {
+    color: '#1E1B18',
+  },
+  sunnahContainer: {
+    marginTop: 18,
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1.2,
+    borderColor: '#D4A37344',
+  },
+  sunnahHeaderTitle: {
+    fontWeight: 'bold',
+    fontSize: 15,
+    marginBottom: 12,
+    textAlign: 'right',
+  },
+  sunnahRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderColor: 'rgba(212,163,115,0.15)',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    padding: 20,
+    borderRadius: 22,
+    maxHeight: '60%',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  shareOptionBtn: {
+    width: '100%',
+    backgroundColor: '#D4A373',
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  shareOptionBtnText: {
+    color: '#1E1B18',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  cityOption: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#D4A37322',
+    width: '100%',
+  },
+  cityOptionText: {
+    textAlign: 'right',
+  },
+  closeModalBtn: {
+    marginTop: 5,
+    backgroundColor: '#C86D51',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    width: '100%',
+  },
+  closeModalBtnText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  centerScreen: { justifyContent: 'center', alignItems: 'center' },
+  header: { padding: 10, alignItems: 'center', marginBottom: 15 },
+  headerTitle: { fontWeight: 'bold' },
+  mainHeaderCard: { padding: 22, borderRadius: 28, alignItems: 'center', marginBottom: 15, borderWidth: 1.5, borderColor: '#D4A37344' },
+  clockText: { fontWeight: 'bold', marginBottom: 5 },
+  dateText: { marginBottom: 3 },
+  hijriText: { fontWeight: '600' },
+  verseCard: { padding: 20, borderRadius: 28, marginBottom: 15, borderWidth: 1.5, borderColor: '#D4A37344' },
+  verseBadgeTitle: { fontWeight: 'bold', marginBottom: 8 },
+  verseText: { textAlign: 'right' },
+  verseRef: { textAlign: 'left', fontWeight: 'bold' },
+  verseMeaning: { textAlign: 'right', marginTop: 4 },
+  shareBtnEnhanced: { backgroundColor: 'rgba(212,163,115,0.15)', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1, borderColor: '#D4A37355' },
+  tasbeehCard: { padding: 22, borderRadius: 28, alignItems: 'center', marginBottom: 15, borderWidth: 1.5, borderColor: '#D4A37344' },
+  tasbeehTitle: { fontWeight: 'bold', marginBottom: 4 },
+  tasbeehWords: { marginBottom: 15 },
+  tasbeehCircle: { justifyContent: 'center', alignItems: 'center', overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 6, elevation: 6 },
+  tasbeehNumber: { fontWeight: 'bold' },
+  tasbeehTapLabel: { marginTop: 2, fontWeight: '600' },
+  resetTasbeehBtn: { marginTop: 12 },
+  resetTasbeehText: { color: '#C86D51' },
+  nameCard: { padding: 20, borderRadius: 28, alignItems: 'center', marginBottom: 15, borderWidth: 1.5, borderColor: '#D4A37344' },
+  nameCardHeader: { fontWeight: 'bold', marginBottom: 5 },
+  allahName: { fontWeight: 'bold', marginBottom: 4 },
+  allahMeaning: { textAlign: 'center' },
+  tapHintText: { fontStyle: 'italic', opacity: 0.8 },
+  nameCardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(212, 163, 115, 0.2)', paddingTop: 8 },
+  allNamesLinkText: { color: '#D4A373', fontWeight: 'bold' },
+  allahListSubtitle: { textAlign: 'center', marginBottom: 15 },
+  allahListItemCard: { borderRadius: 22, marginBottom: 12, borderWidth: 1.5, borderColor: '#D4A37344' },
+  allahListItemName: { fontWeight: 'bold', textAlign: 'right', marginBottom: 4 },
+  allahListItemMeaning: { textAlign: 'right' },
+  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 30 },
+  gridItem: { width: '48%', padding: 20, borderRadius: 28, alignItems: 'center', marginBottom: 15, borderWidth: 1.5, borderColor: '#D4A37344' },
+  gridEmoji: { fontSize: 28, marginBottom: 8 },
+  gridTitle: { fontWeight: 'bold' },
+  menuContainer: { paddingHorizontal: 5 },
+  menuCard: { padding: 20, borderRadius: 28, marginBottom: 15, borderWidth: 1.5, borderColor: '#D4A37344' },
+  menuTitle: { fontWeight: 'bold', marginBottom: 5 },
+  menuSubtitle: {},
+  card: { borderRadius: 28, marginBottom: 15, borderWidth: 1.5, borderColor: '#D4A37344' },
+  dhikrText: { textAlign: 'right', marginBottom: 12 },
+  rewardText: { textAlign: 'right', marginBottom: 12, fontStyle: 'italic' },
+  counterBadge: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 18, alignSelf: 'flex-start' },
+  counterText: { fontWeight: 'bold' },
+  completionContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 60, padding: 20 },
+  completionEmoji: { fontSize: 55, marginBottom: 15 },
+  completionTitle: { fontWeight: 'bold', marginBottom: 8, textAlign: 'center' },
+  completionSubtitle: { textAlign: 'center', marginBottom: 25, lineHeight: 22 },
+  resetButton: { paddingVertical: 12, paddingHorizontal: 25, borderRadius: 22 },
+  resetButtonText: { fontWeight: 'bold' },
+  sebhaLabel: { fontWeight: 'bold', marginBottom: 30 },
+  bigSebhaCircle: { justifyContent: 'center', alignItems: 'center', overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 8, elevation: 8 },
+  bigSebhaNumber: { fontWeight: 'bold' },
+  bigSebhaHint: { marginTop: 4, fontWeight: '600' },
+  resetSebhaBtn: { marginTop: 40, paddingVertical: 10, paddingHorizontal: 22, borderRadius: 18 },
+  resetSebhaText: { color: '#C86D51', fontWeight: 'bold' },
+  prayerCard: { padding: 22, borderRadius: 28, marginBottom: 15, borderWidth: 1.5, borderColor: '#D4A37344' },
+  prayerTitle: { fontWeight: 'bold', marginBottom: 12, textAlign: 'center' },
+  prayerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderColor: 'rgba(212,163,115,0.15)' },
+  prayerName: { fontWeight: 'bold' },
+  prayerTime: { fontWeight: 'bold' },
+  qiblaContainer: { padding: 22, borderRadius: 28, alignItems: 'center', marginBottom: 20, borderWidth: 1.5, borderColor: '#D4A37344' },
+  qiblaHeader: { fontWeight: 'bold', marginBottom: 8 },
+  qiblaDesc: { textAlign: 'center', lineHeight: 20 },
+  errorText: { color: '#C86D51', textAlign: 'center', marginBottom: 10 },
+  settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 18, borderRadius: 28, marginBottom: 12, borderWidth: 1.5, borderColor: '#D4A37344' },
+  settingRowColumn: { padding: 20, borderRadius: 28, marginBottom: 12, borderWidth: 1.5, borderColor: '#D4A37344' },
+  settingLabel: { fontWeight: '600' },
+  fontButtonsRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 5 },
+  fontBtn: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 14 },
+  fontBtnText: { fontWeight: 'bold' },
+  policyText: { lineHeight: 22 },
+  
+  ornateCompassOuterRing: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    borderWidth: 3,
+    borderColor: '#D4A373',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(212, 163, 115, 0.08)',
+    marginVertical: 10,
+    shadowColor: '#D4A373',
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  ornateCompassInnerRing: {
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    borderWidth: 1.5,
+    borderColor: 'rgba(212, 163, 115, 0.5)',
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  compassCenterDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#D4A373',
+    position: 'absolute',
+    zIndex: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.5,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  compassNeedleContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+  },
+  compassArrowHead: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 9,
+    borderRightWidth: 9,
+    borderBottomWidth: 24,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    position: 'absolute',
+    top: 15,
+  },
+  compassArrowShaft: {
+    width: 3.5,
+    height: 50,
+    position: 'absolute',
+    top: 35,
+    borderRadius: 2,
+  },
+  alignmentStatus: {
+    textAlign: 'center',
+  },
+});
+
+const heritageDarkTheme = {
+  card: { backgroundColor: '#28231F', borderWidth: 1.5, borderColor: '#D4A37333' },
+  text: { color: '#F4EADF' },
+  subText: { color: '#B5A290' },
+  accentText: { color: '#D4A373' },
+  badge: { backgroundColor: '#3A322A' },
+  counterText: { color: '#D4A373' },
+  circleBtn: { backgroundColor: '#D4A373' },
+  circleText: { color: '#1E1B18' },
+  circleSubText: { color: '#4A3B2C' },
+};
+
+const heritageLightTheme = {
+  card: { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 3, borderWidth: 1.5, borderColor: '#D4A37344' },
+  text: { color: '#332922' },
+  subText: { color: '#7A6B5D' },
+  accentText: { color: '#9E6D3B' },
+  badge: { backgroundColor: '#F4ECE1' },
+  counterText: { color: '#9E6D3B' },
+  circleBtn: { backgroundColor: '#D4A373' },
+  circleText: { color: '#FFFFFF' },
+  circleSubText: { color: '#FAF6F0' },
+};

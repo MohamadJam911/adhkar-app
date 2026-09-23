@@ -1,31 +1,103 @@
 {
   "expo": {
-    "name": "adhkar-app",
+    "name": "مسرى المسلم",
     "slug": "adhkar-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mohamad.masra",
+      "buildNumber": "1",
+      "userInterfaceStyle": "automatic",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "نستخدم موقعك الجغرافي فقط لحساب مواقيت الصلاة الدقيقة لمدينتك وتحديد اتجاه القبلة الصحيح. لا يتم تخزين موقعك أو مشاركته مع أي جهة خارجية."
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#12241F"
       },
-      "predictiveBackGestureEnabled": false,
-      "package": "com.mohamad_911.adhkarapp"
+      "package": "com.mohamad.masra",
+      "versionCode": 1,
+      "userInterfaceStyle": "automatic"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#12241F"
+        }
+      ],
+      "expo-sharing",
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "نستخدم موقعك الجغرافي فقط لحساب مواقيت الصلاة الدقيقة لمدينتك وتحديد اتجاه القبلة الصحيح. لا يتم تخزين موقعك أو مشاركته مع أي جهة خارجية.",
+          "locationWhenInUsePermission": "نستخدم موقعك الجغرافي فقط لحساب مواقيت الصلاة الدقيقة لمدينتك وتحديد اتجاه القبلة الصحيح. لا يتم تخزين موقعك أو مشاركته مع أي جهة خارجية."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#D4A373"
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "PrayerWidget",
+              "label": "الصلاة القادمة",
+              "description": "يعرض اسم ووقت الصلاة القادمة (أو وقت الإقامة الحالي) والوقت المتبقي عليها مباشرة من الشاشة الرئيسية، بحجم مصغّر قابل للتكبير حسب رغبتك",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "AllPrayerTimesWidget",
+              "label": "مواقيت الصلاة كاملة",
+              "description": "يعرض كل مواقيت الصلاة الخمسة دفعة واحدة، مع تمييز الصلاة القادمة",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ]
+    ],
     "extra": {
       "eas": {
-        "projectId": "618035a7-c436-495a-8ea2-ddf5caac83c1"
+        "projectId": "9714fea8-d060-4060-b91a-19bdbc271a1e"
       }
+    },
+    "owner": "mohamadjambgu",
+    "updates": {
+      "url": "https://u.expo.dev/9714fea8-d060-4060-b91a-19bdbc271a1e",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }
