@@ -55,9 +55,14 @@ const AnimatedSplash = () => {
       style={{ flex: 1, backgroundColor: SPLASH_BG_COLOR, justifyContent: 'center', alignItems: 'center' }}
       onLayout={handleLayout}
     >
+      {/* cover (مش contain): الصورة طويلة وضيّقة (862×1825)، فعلى الآيباد
+          (شاشة أعرض) contain كانت بتترك فراغ أخضر ~٣٠٠ نقطة عالجانبين. cover
+          بتكبّر لحد ما تغطي الشاشة كلها — على الجوالات التكبير ٢-٥٪ بس، وعلى
+          الآيباد ~١.٥× بيقصّ شوي من فوق (رأس القوس) وتحت (السجادة)، والعنوان
+          وقبة الصخرة بالنص بيضلّوا ظاهرين كاملين. */}
       <Animated.Image
         source={require('../../assets/splash.png')}
-        resizeMode="contain"
+        resizeMode="cover"
         style={[{ width: '100%', height: '100%' }, animatedImageStyle]}
       />
     </View>

@@ -7,7 +7,7 @@ import { ThemeContext } from '../theme/ThemeContext';
 import { heritageDarkTheme, heritageLightTheme } from '../theme/colorThemes';
 import { styles } from '../theme/styles';
 import { HeritageIcons } from '../components/HeritageIcons';
-import { ExactImagePatternWall, HeritageArchBanner, SeniorBackArrow } from '../components/Decorative';
+import { ExactImagePatternWall, HeritageArchBanner, SeniorBackArrow, useBackgroundScroll } from '../components/Decorative';
 import { formatArabicNumbers } from '../utils/formatters';
 import { syncUncheckedPrayersToQada } from '../utils/prayerLogic';
 import { logStat } from '../utils/statsLogger';
@@ -69,9 +69,12 @@ function StatsScreen({ navigation, route }: { navigation: any, route: any }) {
     { title: 'المحافظ على الصلاة', desc: 'سجّلت صلواتك ونوافلك في التطبيق', unlocked: totalWeekCount >= 10, icon: HeritageIcons.Mosque },
   ];
 
+  // parallax: بيحرّك نقش الخلفية مع التمرير (خيار الخلفية ٣)
+  const bgScroll = useBackgroundScroll();
+
   return (
     <ExactImagePatternWall isDarkMode={isDarkMode}>
-      <Animated.ScrollView entering={FadeIn.duration(400)} contentContainerStyle={{ padding: 15 }}>
+      <Animated.ScrollView entering={FadeIn.duration(400)} contentContainerStyle={{ padding: 15 }} onScroll={bgScroll} scrollEventThrottle={16}>
         <SeniorBackArrow onPress={() => navigation.goBack()} isDarkMode={isDarkMode} />
         <HeritageArchBanner title="الملف الشخصي والإنجازات" textColor={themeColors.text.color} isDarkMode={isDarkMode} />
 

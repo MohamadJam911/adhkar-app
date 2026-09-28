@@ -1,55 +1,52 @@
 import React, { useState, useContext } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { Text, View, TouchableOpacity } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
 import { ThemeContext } from '../theme/ThemeContext';
 import { heritageDarkTheme, heritageLightTheme } from '../theme/colorThemes';
 import { styles } from '../theme/styles';
-import { ExactImagePatternWall, HeritageArchBanner, TasbihCircleOrnament } from '../components/Decorative';
+import { ExactImagePatternWall, HeritageArchBanner } from '../components/Decorative';
+import { MisbahaCounter } from '../components/MisbahaCounter';
 import { formatArabicNumbers } from '../utils/formatters';
 import { logStat } from '../utils/statsLogger';
 
 function SebhaScreen({ hapticEnabled, fontSize }: { hapticEnabled: boolean, fontSize: number }) {
+  // العدّاد بيضل ماشي (٣٣ ← ٣٤ ← …) بدل ما يرجع صفر عند الهدف — حبّات
+  // المسبحة حوالين الدائرة بتوضّح موقعك بكل ٣٣، والجولة محسوبة من العدد.
   const [count, setCount] = useState(0);
   const [target, setTarget] = useState<number | null>(33);
-  const [rounds, setRounds] = useState(0);
   const { isDarkMode } = useContext(ThemeContext);
   const themeColors = isDarkMode ? heritageDarkTheme : heritageLightTheme;
 
+  const currentRound = target && count > 0 ? Math.floor((count - 1) / target) + 1 : 1;
+
   const handleTasbeeh = async () => {
     const nextCount = count + 1;
-    await logStat('tasbeeh', 1);
+    setCount(nextCount);
+    logStat('tasbeeh', 1);
 
-    if (target) {
-      if (nextCount >= target) {
-        if (hapticEnabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setCount(0);
-        setRounds(prev => prev + 1);
-        return;
-      }
-    }
-
-    if (nextCount % 33 === 0 || nextCount === 100) {
-      if (hapticEnabled) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } else if (hapticEnabled) {
+    if (!hapticEnabled) return;
+    const reachedTarget = !!target && nextCount % target === 0;
+    if (reachedTarget || nextCount % 33 === 0) {
+      // اكتملت ٣٣ (أو الهدف)
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else if (nextCount > 1 && nextCount % 33 === 1) {
+      // الضغطة ٣٤ (وأخواتها): مع النبضة الذهبية
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } else {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-
-    setCount(nextCount);
   };
 
   const selectTarget = (newTarget: number | null) => {
     if (hapticEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setTarget(newTarget);
     setCount(0);
-    setRounds(0);
   };
 
   const resetSebha = () => {
     if (hapticEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setCount(0);
-    setRounds(0);
   };
 
   return (
@@ -85,29 +82,20 @@ function SebhaScreen({ hapticEnabled, fontSize }: { hapticEnabled: boolean, font
           </View>
 
           <Text style={[styles.sebhaLabel, themeColors.text, { fontSize: fontSize - 2, marginBottom: 25 }]}>
-            {target ? `الجولة: ${formatArabicNumbers(rounds + 1)} • الهدف: ${formatArabicNumbers(target)}` : 'التسبيح الحر'}
+            {target ? `الجولة: ${formatArabicNumbers(currentRound)} • الهدف: ${formatArabicNumbers(target)}` : 'التسبيح الحر'}
           </Text>
-          
-          <TouchableOpacity
+
+          <MisbahaCounter
+            count={count}
+            size={fontSize * 8}
+            isDarkMode={isDarkMode}
             onPress={handleTasbeeh}
-            activeOpacity={0.85}
-            style={styles.tasbihDecorRing}
-            accessibilityRole="button"
             accessibilityLabel="عداد السبحة"
             accessibilityHint="اضغط لزيادة العداد بواحد"
-            accessibilityValue={{ text: `${count}` }}
           >
-            <LinearGradient
-              colors={['#E5B279', '#C8935E']}
-              style={[styles.bigSebhaCircle, { width: fontSize * 8, height: fontSize * 8, borderRadius: (fontSize * 8) / 2 }]}
-            >
-              <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                <TasbihCircleOrnament />
-              </View>
-              <Text style={[styles.bigSebhaNumber, themeColors.circleText, { fontSize: fontSize * 2 }]}>{formatArabicNumbers(count)}</Text>
-              <Text style={[styles.bigSebhaHint, themeColors.circleSubText, { fontSize: fontSize - 8 }]}>اضغط هنا للتسبيح</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+            <Text style={[styles.bigSebhaNumber, themeColors.circleText, { fontSize: fontSize * 2 }]}>{formatArabicNumbers(count)}</Text>
+            <Text style={[styles.bigSebhaHint, themeColors.circleSubText, { fontSize: fontSize - 8 }]}>اضغط هنا للتسبيح</Text>
+          </MisbahaCounter>
 
           <TouchableOpacity style={styles.resetSebhaBtn} onPress={resetSebha}>
             <Text style={[styles.resetSebhaText, { fontSize: fontSize - 3 }]}>تصفير العداد والهدف</Text>

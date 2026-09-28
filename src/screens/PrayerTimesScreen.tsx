@@ -11,7 +11,7 @@ import { ThemeContext } from '../theme/ThemeContext';
 import { heritageDarkTheme, heritageLightTheme } from '../theme/colorThemes';
 import { styles } from '../theme/styles';
 import { HeritageIcons } from '../components/HeritageIcons';
-import { ExactImagePatternWall, HeritageArchBanner, GoldenDivider, ThemedCheckbox } from '../components/Decorative';
+import { ExactImagePatternWall, HeritageArchBanner, GoldenDivider, ThemedCheckbox, useBackgroundScroll } from '../components/Decorative';
 import { PrayerSharePage, MonthlyImsakiyaSharePage } from '../components/SharePages';
 import { formatArabicNumbers, getArabicLocationLabel, getSafeHijriDate } from '../utils/formatters';
 import { getCountdownText, getDuhaTimes, getPrayerStatus, calculateLastThirdOfNight, updateAndroidWidget, QIBLA_ALIGNED_COLOR, QIBLA_ALIGNED_TINT_18, QIBLA_ALIGNED_TINT_12, QIBLA_ALIGNED_TINT_60 } from '../utils/prayerLogic';
@@ -350,7 +350,7 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
       await new Promise(requestAnimationFrame);
 
       uri = await captureRef(prayerCardRef, { format: 'png', quality: 1, result: 'tmpfile' });
-      await Sharing.shareAsync(uri, { dialogTitle: 'مشاركة مواقيت الصلاة اليوم', mimeType: 'image/png' });
+      await Sharing.shareAsync(uri, { dialogTitle: 'مشاركة مواقيت الصلاة اليوم', mimeType: 'image/png', UTI: 'public.png' });
     } catch (error) {
       Alert.alert('خطأ', 'تعذر تجهيز صورة المواقيت للمشاركة.');
     } finally {
@@ -368,7 +368,7 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
       await new Promise(requestAnimationFrame);
 
       uri = await captureRef(imsakiyaCardRef, { format: 'png', quality: 1, result: 'tmpfile' });
-      await Sharing.shareAsync(uri, { dialogTitle: 'مشاركة إمساكية الشهر بالكامل', mimeType: 'image/png' });
+      await Sharing.shareAsync(uri, { dialogTitle: 'مشاركة إمساكية الشهر بالكامل', mimeType: 'image/png', UTI: 'public.png' });
     } catch (error) {
       Alert.alert('خطأ', 'تعذر تصدير صورة الإمساكية.');
     } finally {
@@ -445,6 +445,9 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
 
   const showDuha = isDuhaPeriod();
 
+  // parallax: بيحرّك نقش الخلفية مع التمرير (خيار الخلفية ٣)
+  const bgScroll = useBackgroundScroll();
+
   return (
     <ExactImagePatternWall isDarkMode={isDarkMode}>
       <View style={{ position: 'absolute', left: -9999, top: 0, width: 1080, opacity: 0 }} pointerEvents="none" collapsable={false}>
@@ -470,7 +473,7 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
         </View>
       </View>
 
-      <Animated.ScrollView entering={FadeIn.duration(400)} contentContainerStyle={{ padding: 15 }}>
+      <Animated.ScrollView entering={FadeIn.duration(400)} contentContainerStyle={{ padding: 15 }} onScroll={bgScroll} scrollEventThrottle={16}>
         <HeritageArchBanner title="مواقيت الصلاة والقبلة" textColor={themeColors.text.color} isDarkMode={isDarkMode} />
 
         <View style={[styles.locationCard, themeColors.card, { padding: 16 }]}>

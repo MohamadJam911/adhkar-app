@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
+import Animated from 'react-native-reanimated';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Linking, Modal, Share, Platform, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LinearGradient } from 'expo-linear-gradient';
 import { captureRef, releaseCapture } from 'react-native-view-shot';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
@@ -11,8 +11,9 @@ import { ThemeContext } from '../theme/ThemeContext';
 import { heritageDarkTheme, heritageLightTheme } from '../theme/colorThemes';
 import { styles } from '../theme/styles';
 import { HeritageIcons } from '../components/HeritageIcons';
-import { ExactImagePatternWall, HeritageArchBanner, TasbihCircleOrnament, CardCornerOrnament, GoldenDivider, OttomanHeaderOrnament, OttomanFlourishDivider, ThemedCheckbox } from '../components/Decorative';
+import { ExactImagePatternWall, HeritageArchBanner, CardMotif, MotifOnLine, GoldenDivider, HeaderLanternOrnament, OttomanFlourishDivider, ThemedCheckbox, useBackgroundScroll } from '../components/Decorative';
 import { QuranSharePage, HadithSharePage } from '../components/SharePages';
+import { MisbahaCounter } from '../components/MisbahaCounter';
 import { formatArabicNumbers, toEasternArabicNumerals, getSafeHijriDate } from '../utils/formatters';
 import { logStat } from '../utils/statsLogger';
 import { ALLAH_NAMES } from '../data/allahNamesData';
@@ -92,8 +93,13 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
   };
 
   const handleQuickTasbeeh = async () => {
-    if (hapticEnabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setTasbeehCount(prev => prev + 1);
+    const next = tasbeehCount + 1;
+    setTasbeehCount(next);
+    if (hapticEnabled) {
+      if (next % 33 === 0) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      else if (next > 1 && next % 33 === 1) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      else Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     await logStat('tasbeeh', 1);
   };
 
@@ -148,7 +154,7 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
       await new Promise(requestAnimationFrame);
 
       uri = await captureRef(shareCardRef, { format: 'png', quality: 1, result: 'tmpfile' });
-      await Sharing.shareAsync(uri, { dialogTitle: 'مشاركة آية من القرآن الكريم', mimeType: 'image/png' });
+      await Sharing.shareAsync(uri, { dialogTitle: 'مشاركة آية من القرآن الكريم', mimeType: 'image/png', UTI: 'public.png' });
     } catch (error) {
       Alert.alert('خطأ', 'فشل إنشاء صورة الآية.');
     } finally {
@@ -175,7 +181,7 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
       await new Promise(requestAnimationFrame);
 
       uri = await captureRef(hadithCardRef, { format: 'png', quality: 1, result: 'tmpfile' });
-      await Sharing.shareAsync(uri, { dialogTitle: 'مشاركة حديث نبوي شريف', mimeType: 'image/png' });
+      await Sharing.shareAsync(uri, { dialogTitle: 'مشاركة حديث نبوي شريف', mimeType: 'image/png', UTI: 'public.png' });
     } catch (error) {
       Alert.alert('خطأ', 'فشل إنشاء صورة الحديث.');
     } finally {
@@ -203,6 +209,9 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
     { key: 'dua', label: 'تحري ساعة الاستجابة بعد العصر' },
   ];
 
+  // parallax: بيحرّك نقش الخلفية مع التمرير (خيار الخلفية ٣)
+  const bgScroll = useBackgroundScroll();
+
   return (
     <ExactImagePatternWall isDarkMode={isDarkMode}>
       <StatusBar style={isDarkMode ? "light" : "dark"} />
@@ -220,11 +229,11 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 15 }}>
+      <Animated.ScrollView contentContainerStyle={{ padding: 15 }} onScroll={bgScroll} scrollEventThrottle={16}>
         <HeritageArchBanner title="بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ" textColor={themeColors.text.color} isDarkMode={isDarkMode} />
 
         <View style={[styles.mainHeaderCard, themeColors.card]}>
-          <OttomanHeaderOrnament />
+          <HeaderLanternOrnament />
           <Text style={[styles.clockText, themeColors.text, { fontSize: fontSize + 12 }]}>{currentTime}</Text>
           <OttomanFlourishDivider />
           <Text style={[styles.dateText, themeColors.subText, { fontSize: fontSize - 2 }]}>{gregorianDate}</Text>
@@ -277,11 +286,16 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
         )}
 
         {/* بطاقة الآية — زر المشاركة على اليسار والعنوان على اليمين */}
-        <TouchableOpacity style={[styles.verseCard, themeColors.card, { paddingVertical: 24, paddingHorizontal: 18 }]} onPress={handleNextVerse} activeOpacity={0.85}>
-          <CardCornerOrnament />
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <TouchableOpacity onPress={(e) => { e.stopPropagation(); setShareModalVisible(true); }} style={styles.shareBtnEnhanced} activeOpacity={0.8}>
-              <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#D4A373' }}>مشاركة</Text>
+        <TouchableOpacity style={[styles.verseCard, themeColors.card, { paddingVertical: 14, paddingHorizontal: 16 }]} onPress={handleNextVerse} activeOpacity={0.85}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <TouchableOpacity
+              onPress={(e) => { e.stopPropagation(); setShareModalVisible(true); }}
+              style={styles.shareBtnEnhanced}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="مشاركة الآية"
+            >
+              <HeritageIcons.Share size={18} color="#D4A373" />
             </TouchableOpacity>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <HeritageIcons.QuranBook size={18} color="#D4A373" />
@@ -300,36 +314,44 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
                 textAlign: 'center',
                 fontFamily: quranFontFamily,
                 writingDirection: 'rtl',
-                marginVertical: 8,
+                marginVertical: 2,
               },
             ]}
           >
             {currentVerse.ayah}
           </Text>
 
-          <Text style={[styles.verseRef, themeColors.accentText, { fontSize: fontSize - 2, textAlign: 'center', fontWeight: 'bold', marginVertical: 8 }]}>
+          <Text style={[styles.verseRef, themeColors.accentText, { fontSize: fontSize - 2, textAlign: 'center', fontWeight: 'bold', marginVertical: 4 }]}>
             {toEasternArabicNumerals(currentVerse.reference)}
           </Text>
 
-          <Text style={[styles.verseMeaning, themeColors.subText, { fontSize: fontSize - 3, textAlign: 'right', marginTop: 6 }]}>
+          {/* فاصل بين نص الآية والتفسير */}
+          <GoldenDivider style={{ width: '70%', alignSelf: 'center', marginTop: 2, marginBottom: 6 }} />
+
+          <Text style={[styles.verseMeaning, themeColors.subText, { fontSize: fontSize - 3, textAlign: 'right', marginTop: 2 }]}>
             التفسير الميسّر: {currentVerse.meaning}
           </Text>
 
-          <GoldenDivider style={{ marginTop: 14, marginBottom: 8 }} />
+          <MotifOnLine variant="quran" style={{ marginTop: 8, marginBottom: 6 }} />
           <Text style={[styles.tapHintText, themeColors.accentText, { fontSize: fontSize - 6, textAlign: 'center' }]}>
             (اضغط لآية أخرى)
           </Text>
         </TouchableOpacity>
 
         {/* بطاقة الحديث النبوي — زر المشاركة على اليسار والعنوان على اليمين */}
-        <TouchableOpacity style={[styles.verseCard, themeColors.card, { paddingVertical: 24, paddingHorizontal: 18 }]} onPress={handleNextHadith} activeOpacity={0.85}>
-          <CardCornerOrnament />
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <TouchableOpacity onPress={(e) => { e.stopPropagation(); setHadithShareModalVisible(true); }} style={styles.shareBtnEnhanced} activeOpacity={0.8}>
-              <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#D4A373' }}>مشاركة</Text>
+        <TouchableOpacity style={[styles.verseCard, themeColors.card, { paddingVertical: 14, paddingHorizontal: 16 }]} onPress={handleNextHadith} activeOpacity={0.85}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <TouchableOpacity
+              onPress={(e) => { e.stopPropagation(); setHadithShareModalVisible(true); }}
+              style={styles.shareBtnEnhanced}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="مشاركة الحديث"
+            >
+              <HeritageIcons.Share size={18} color="#D4A373" />
             </TouchableOpacity>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <HeritageIcons.IslamicStar size={18} color="#D4A373" />
+              <HeritageIcons.Qalam size={18} color="#D4A373" />
               <Text style={[styles.verseBadgeTitle, themeColors.accentText, { fontSize: fontSize - 2, marginBottom: 0 }]}>
                 حديث نبوي صحيح
               </Text>
@@ -350,7 +372,7 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
                 lineHeight: (fontSize + 2) * 1.8,
                 textAlign: 'center',
                 writingDirection: 'rtl',
-                marginVertical: 8,
+                marginVertical: 2,
                 fontWeight: '600',
               },
             ]}
@@ -370,15 +392,18 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
             </TouchableOpacity>
           )}
 
-          <Text style={[styles.verseRef, themeColors.accentText, { fontSize: fontSize - 2, textAlign: 'center', fontWeight: 'bold', marginVertical: 6 }]}>
+          <Text style={[styles.verseRef, themeColors.accentText, { fontSize: fontSize - 2, textAlign: 'center', fontWeight: 'bold', marginVertical: 4 }]}>
             {currentHadith.reference}
           </Text>
 
-          <Text style={[styles.verseMeaning, themeColors.subText, { fontSize: fontSize - 3, textAlign: 'right', marginTop: 6 }]}>
+          {/* فاصل بين نص الحديث والشرح */}
+          <GoldenDivider style={{ width: '70%', alignSelf: 'center', marginTop: 2, marginBottom: 6 }} />
+
+          <Text style={[styles.verseMeaning, themeColors.subText, { fontSize: fontSize - 3, textAlign: 'right', marginTop: 2 }]}>
             الشرح والفائدة: {currentHadith.explanation}
           </Text>
 
-          <GoldenDivider style={{ marginTop: 12, marginBottom: 8 }} />
+          <MotifOnLine variant="hadith" style={{ marginTop: 8, marginBottom: 6 }} />
           <Text style={[styles.tapHintText, themeColors.accentText, { fontSize: fontSize - 6, textAlign: 'center' }]}>
             (اضغط لحديث آخر)
           </Text>
@@ -438,30 +463,21 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
 
 
         <View style={[styles.tasbeehCard, themeColors.card]}>
-          <CardCornerOrnament />
-          <Text style={[styles.tasbeehTitle, themeColors.text, { fontSize: fontSize }]}>الذكر السريع</Text>
+          <CardMotif variant="dhikr" />
+          <Text style={[styles.tasbeehTitle, themeColors.accentText, { fontSize: fontSize }]}>الذكر السريع</Text>
           <Text style={[styles.tasbeehWords, themeColors.subText, { fontSize: fontSize - 3 }]}>استغفر الله • لا إله إلا الله • الحمد لله</Text>
 
-          <TouchableOpacity
+          <MisbahaCounter
+            count={tasbeehCount}
+            size={fontSize * 6}
+            isDarkMode={isDarkMode}
             onPress={handleQuickTasbeeh}
-            activeOpacity={0.8}
-            style={styles.tasbihDecorRing}
-            accessibilityRole="button"
             accessibilityLabel="عداد الذكر السريع"
             accessibilityHint="اضغط لزيادة العداد بواحد"
-            accessibilityValue={{ text: `${tasbeehCount}` }}
           >
-            <LinearGradient
-              colors={['#E5B279', '#C8935E']}
-              style={[styles.tasbeehCircle, { width: fontSize * 6, height: fontSize * 6, borderRadius: (fontSize * 6) / 2 }]}
-            >
-              <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                <TasbihCircleOrnament />
-              </View>
-              <Text style={[styles.tasbeehNumber, themeColors.circleText, { fontSize: fontSize + 14 }]}>{formatArabicNumbers(tasbeehCount)}</Text>
-              <Text style={[styles.tasbeehTapLabel, themeColors.circleSubText, { fontSize: fontSize - 7 }]}>اضغط للذكر</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+            <Text style={[styles.tasbeehNumber, themeColors.circleText, { fontSize: fontSize + 14 }]}>{formatArabicNumbers(tasbeehCount)}</Text>
+            <Text style={[styles.tasbeehTapLabel, themeColors.circleSubText, { fontSize: fontSize - 7 }]}>اضغط للذكر</Text>
+          </MisbahaCounter>
 
           {tasbeehCount > 0 && (
             <TouchableOpacity onPress={() => setTasbeehCount(0)} style={styles.resetTasbeehBtn}>
@@ -471,20 +487,25 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
         </View>
 
         <TouchableOpacity style={[styles.nameCard, themeColors.card]} onPress={handleNextAllahName} activeOpacity={0.85}>
-          <CardCornerOrnament />
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 5 }}>
-            <HeritageIcons.IslamicStar size={18} color="#D4A373" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
             <Text style={[styles.nameCardHeader, themeColors.accentText, { fontSize: fontSize - 2, marginBottom: 0 }]}>
               من أسماء الله الحسنى
             </Text>
           </View>
-          <Text style={[styles.allahName, themeColors.text, { fontSize: fontSize + 6 }]}>
+          {/* ارتفاع سطر كافي للتشكيل المتراكب (شدّة+فتحة فوق، كسرة تحت) حتى ما ينقصّ */}
+          <Text
+            style={[
+              styles.allahName,
+              themeColors.text,
+              { fontSize: fontSize + 6, lineHeight: (fontSize + 6) * 1.9, paddingVertical: 2, marginBottom: 0, textAlign: 'center' },
+            ]}
+          >
             {ALLAH_NAMES[nameIndex].name}
           </Text>
-          <Text style={[styles.allahMeaning, themeColors.subText, { fontSize: fontSize - 2 }]}>
+          <Text style={[styles.allahMeaning, themeColors.subText, { fontSize: fontSize - 2, marginTop: 2 }]}>
             {ALLAH_NAMES[nameIndex].meaning}
           </Text>
-          <GoldenDivider style={{ marginTop: 12 }} />
+          <GoldenDivider style={{ marginTop: 8 }} />
           <View style={styles.nameCardFooter}>
             <Text style={[styles.tapHintText, themeColors.accentText, { fontSize: fontSize - 6 }]}>
               (اضغط لرؤية اسم آخر)
@@ -548,7 +569,7 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
           </TouchableOpacity>
         </View>
 
-      </ScrollView>
+      </Animated.ScrollView>
     </ExactImagePatternWall>
   );
 }

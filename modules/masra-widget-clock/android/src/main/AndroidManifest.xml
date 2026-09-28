@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Exact widget refreshes at the prayer minute. Granted by default on Android 12-13;
+         on Android 14+ the user enables it under "Alarms & reminders". Without it we fall
+         back to a short inexact window. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+</manifest>

@@ -14,8 +14,9 @@ import { StatsScreen } from './src/screens/StatsScreen';
 import { PrivacyPolicyScreen } from './src/screens/PrivacyPolicyScreen';
 import { AboutScreen } from './src/screens/AboutScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
-import { syncUncheckedPrayersToQada } from './src/utils/prayerLogic';
+import { syncUncheckedPrayersToQada, updateHomeScreenWidgets } from './src/utils/prayerLogic';
 import { checkAndMaybeShowRatePrompt } from './src/utils/rateApp';
+import { refreshAppNotifications } from './src/services/notificationService';
 
 import * as SplashScreen from 'expo-splash-screen';
 
@@ -55,12 +56,19 @@ function AppRoot() {
   useEffect(() => {
     async function prepare() {
       try {
-        Notifications.requestPermissionsAsync();
+        // بعد ما يتحدد إذن الإشعارات، منعيد جدولة نافذة الأيام الجاية بمواقيتها
+        // الدقيقة (بدون ما نأخّر شاشة البداية — مش await).
+        Notifications.requestPermissionsAsync()
+          .then(() => refreshAppNotifications())
+          .catch(() => {});
         const savedTheme = await AsyncStorage.getItem('@user_theme_mode');
         if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'auto') {
           setThemeModeState(savedTheme as ThemeMode);
         }
         await syncUncheckedPrayersToQada();
+        // تحديث ويدجتس الشاشة الرئيسية (أندرويد + آيفون) من المدينة المحفوظة
+        // مع كل فتحة للتطبيق — حتى لو المستخدم ما فتح شاشة المواقيت.
+        updateHomeScreenWidgets();
         // مدة ظهور السبلاش المخصص: خفّضناها حتى تحس فيها أسرع (كانت 1800، صارت
         // 700) بس لسا كافية إنه حركة التكبير/التلاشي فوق تخلص وتنعرض بشكل
         // واضح قبل ما ننتقل للتطبيق. عدّل الرقم هون إذا بدك أطول/أقصر.
@@ -113,7 +121,16 @@ function AppRoot() {
       <ThemeContext.Provider value={{ isDarkMode, themeMode, setThemeMode }}>
         <View style={{ flex: 1, backgroundColor: screenBgColor }}>
           <NavigationContainer theme={navTheme}>
-            <RootStack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: screenBgColor } }}>
+            {/* headerBackButtonDisplayMode 'minimal': زر الرجوع سهم بس، بدون
+                اسم الشاشة السابقة — على الآيفون كان بيطلع "MainTabs" بالإنجليزي
+                (الاسم الداخلي لشاشة التبويبات) بجانب السهم. */}
+            <RootStack.Navigator
+              screenOptions={{
+                headerShown: false,
+                headerBackButtonDisplayMode: 'minimal',
+                contentStyle: { backgroundColor: screenBgColor },
+              }}
+            >
   <RootStack.Screen name="MainTabs">
     {(props) => <MainTabs {...props} hapticEnabled={hapticEnabled} fontSize={fontSize} setHapticEnabled={setHapticEnabled} setFontSize={setFontSize} />}
   </RootStack.Screen>

@@ -5,15 +5,18 @@ import { ThemeContext } from '../theme/ThemeContext';
 import type { ThemeMode } from '../theme/ThemeContext';
 import { heritageDarkTheme, heritageLightTheme } from '../theme/colorThemes';
 import { styles } from '../theme/styles';
-import { ExactImagePatternWall, HeritageArchBanner } from '../components/Decorative';
+import { ExactImagePatternWall, HeritageArchBanner, useBackgroundScroll } from '../components/Decorative';
 
 function SettingsScreen({ hapticEnabled, setHapticEnabled, fontSize, setFontSize, navigation }: any) {
   const { isDarkMode, themeMode, setThemeMode } = useContext(ThemeContext);
   const themeColors = isDarkMode ? heritageDarkTheme : heritageLightTheme;
 
+  // parallax: بيحرّك نقش الخلفية مع التمرير (خيار الخلفية ٣)
+  const bgScroll = useBackgroundScroll();
+
   return (
     <ExactImagePatternWall isDarkMode={isDarkMode}>
-      <Animated.ScrollView entering={FadeIn.duration(400)} contentContainerStyle={{ padding: 15 }}>
+      <Animated.ScrollView entering={FadeIn.duration(400)} contentContainerStyle={{ padding: 15 }} onScroll={bgScroll} scrollEventThrottle={16}>
         <HeritageArchBanner title="الإعدادات والتفضيلات" textColor={themeColors.text.color} isDarkMode={isDarkMode} />
         
         {/* اختيار المظهر (فاتح / داكن / تلقائي) */}

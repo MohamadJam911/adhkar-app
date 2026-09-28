@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { Text, View, TouchableOpacity } from 'react-native';
+import { TouchableOpacity } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemeContext } from '../theme/ThemeContext';
@@ -21,26 +21,33 @@ function MainTabs({ hapticEnabled, fontSize, setHapticEnabled, setFontSize }: an
       screenOptions={({ navigation }: any) => ({
         headerStyle: { backgroundColor: isDarkMode ? '#1E1B18' : '#FBF9F5' },
         headerTintColor: isDarkMode ? '#D4A373' : '#6F4E37',
+        // العنوان بالنص حتى ما يتصادم مع أيقونة الإعدادات يسار (أندرويد
+        // افتراضياً بيحط العنوان يسار)
+        headerTitleAlign: 'center',
+        // الإعدادات يسار الشريط
+        headerLeft: () => (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('الإعدادات')}
+            activeOpacity={0.7}
+            style={{ marginLeft: 15, padding: 2 }}
+            accessibilityRole="button"
+            accessibilityLabel="الإعدادات"
+          >
+            <HeritageIcons.Gear size={22} color={isDarkMode ? '#D4A373' : '#6F4E37'} />
+          </TouchableOpacity>
+        ),
+        // الإحصائيات يمين الشريط
         headerRight: () => (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginRight: 15 }}>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('StatsScreen')}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel="الإحصائيات"
-              accessibilityHint="يعرض إحصائيات الأذكار والصلوات"
-            >
-              <HeritageIcons.Chart size={22} color={isDarkMode ? '#D4A373' : '#6F4E37'} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('الإعدادات')}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel="الإعدادات"
-            >
-              <Text style={{ fontSize: 20, color: '#D4A373' }}>⚙️</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('StatsScreen')}
+            activeOpacity={0.7}
+            style={{ marginRight: 15, padding: 2 }}
+            accessibilityRole="button"
+            accessibilityLabel="الإحصائيات"
+            accessibilityHint="يعرض إحصائيات الأذكار والصلوات"
+          >
+            <HeritageIcons.Chart size={22} color={isDarkMode ? '#D4A373' : '#6F4E37'} />
+          </TouchableOpacity>
         ),
         tabBarStyle: { 
           backgroundColor: isDarkMode ? '#1E1B18' : '#FBF9F5', 

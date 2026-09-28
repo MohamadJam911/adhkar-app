@@ -1,9 +1,8 @@
 import React from 'react';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { requestWidgetUpdate } from 'react-native-android-widget';
-import { PrayerWidget } from '../widgets/PrayerWidget';
-import { AllPrayerTimesWidget } from '../widgets/AllPrayerTimesWidget';
+import { MasraPalaceWidgetController } from '../widgets/masraPalace';
+import { IosWidgetBridge } from '../widgets/ios/IosWidgetBridge';
 import { formatArabicNumbers } from './formatters';
 import type { QadaItem } from '../types';
 
@@ -238,57 +237,34 @@ export const syncUncheckedPrayersToQada = async () => {
 };
 
 // ==========================================
-// 📱 تحديث ويدجت الشاشة الرئيسية
+// 📱 تحديث ويدجتس الشاشة الرئيسية (أندرويد + آيفون)
 // ==========================================
 const WIDGET_TIMINGS_STORAGE_KEY = '@widget_prayer_timings';
 
-const updateAndroidWidget = (status: any, timings?: any) => {
-  if (Platform.OS !== 'android') return;
-
-  // منخزّن آخر مواقيت صلاة محسوبة بالتخزين المحلي، حتى معالج الويدجت
-  // (widgetTaskHandler بملف src/widgets/widgetTaskHandler.ts) يقدر
-  // يحسب حالة الصلاة القادمة بنفسه ويرسمها من جديد وقت التحديث الدوري
-  // لأندرويد، حتى لو التطبيق مسكّر تماماً.
-  if (timings) {
-    AsyncStorage.setItem(WIDGET_TIMINGS_STORAGE_KEY, JSON.stringify(timings)).catch(() => {});
-  }
-
-  if (status) {
-    // منحدّث الويدجتين معاً (الصلاة القادمة، وكل المواقيت) بنفس اللحظة، كل
-    // وحدة بمحاولة منفصلة حتى لو المستخدم ما ضاف نوع معيّن من الويدجت،
-    // فشل تحديثه ما يمنع تحديث الآخر.
-    try {
-      requestWidgetUpdate({
-        widgetName: 'PrayerWidget',
-        renderWidget: () => (
-          <PrayerWidget
-            nextPrayerName={status.name}
-            nextPrayerTime={formatArabicNumbers(status.time)}
-            countdown={status.countdown}
-            isIqama={status.isIqama}
-          />
-        ),
-      });
-    } catch (err) {}
-
+/**
+ * بيحدّث ويدجتس الشاشة الرئيسية على المنصّتين. timings اختيارية: لما تنعطى
+ * (مواقيت اليوم من شاشة المواقيت) منحفظها ومنستخدمها لتحديد المدينة؛
+ * بدونها (مثلاً عند فتح التطبيق) الويدجت بيحسب من المدينة المحفوظة.
+ */
+const updateHomeScreenWidgets = (timings?: any) => {
+  if (Platform.OS === 'android') {
+    // منخزّن آخر مواقيت محسوبة حتى معالج الويدجت (widgetTaskHandler)
+    // يقدر يستنتج المدينة وقت التحديث الدوري والتطبيق مسكّر.
     if (timings) {
-      try {
-        requestWidgetUpdate({
-          widgetName: 'AllPrayerTimesWidget',
-          renderWidget: () => (
-            <AllPrayerTimesWidget
-              timings={timings}
-              activeName={status.name}
-              isIqama={status.isIqama}
-              nextPrayerTime={formatArabicNumbers(status.time)}
-              countdown={status.countdown}
-            />
-          ),
-        });
-      } catch (err) {}
+      AsyncStorage.setItem(WIDGET_TIMINGS_STORAGE_KEY, JSON.stringify(timings)).catch(() => {});
     }
+    // منمرّر المواقيت مباشرة (بدل ما يقراها من التخزين) لأنه الحفظ فوق
+    // مش مستنّى (fire-and-forget) — حتى ما يصير سباق بين الكتابة والقراءة.
+    // بيحدّث ويدجتس "القصر الزمردي" الاثنين: الـ4×2 والـ2×2 (PrayerWidget).
+    MasraPalaceWidgetController.requestUpdate(timings);
+  } else if (Platform.OS === 'ios') {
+    // بيكتب مواقيت ١٤ يوم لويدجت WidgetKit (targets/widget) وبيعيد تحميله
+    IosWidgetBridge.sync(timings);
   }
 };
+
+/** @deprecated الاسم القديم — صار بيحدّث الآيفون كمان. استخدم updateHomeScreenWidgets. */
+const updateAndroidWidget = (_status: any, timings?: any) => updateHomeScreenWidgets(timings);
 
 
 export {
@@ -297,6 +273,7 @@ export {
   getPrayerStatus,
   calculateLastThirdOfNight,
   updateAndroidWidget,
+  updateHomeScreenWidgets,
   QIBLA_ALIGNED_COLOR,
   QIBLA_ALIGNED_TINT_18,
   QIBLA_ALIGNED_TINT_12,

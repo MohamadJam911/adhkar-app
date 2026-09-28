@@ -1,5 +1,6 @@
 import { Platform, Linking, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as StoreReview from 'expo-store-review';
 
 // ==========================================
 // ⭐ منطق "قيّم التطبيق": رابط مباشر لصفحة التطبيق بالمتجر + تذكير تلقائي
@@ -16,29 +17,31 @@ const IOS_APP_STORE_ID = '';
 const RATE_PROMPT_LAUNCH_THRESHOLD = 5;
 const RATE_PROMPT_SNOOZE_GAP = 10;
 
-const getStoreRatingUrl = (): string | null => {
-  if (Platform.OS === 'ios') {
-    if (!IOS_APP_STORE_ID) return null;
-    return `itms-apps://itunes.apple.com/app/id${IOS_APP_STORE_ID}?action=write-review`;
-  }
-  return `market://details?id=${ANDROID_PACKAGE_NAME}`;
-};
-
+// ملاحظة: ما منستخدم Linking.canOpenURL هون — على iOS بيرجع false دايماً
+// لـitms-apps إلا إذا انعلن بـLSApplicationQueriesSchemes، وعلى أندرويد ١١+
+// لـmarket:// إلا إذا انعلن بـ<queries>. منحاول نفتح مباشرة ومنرجع للبديل
+// إذا فشل.
 const openStoreForRating = async () => {
-  const url = getStoreRatingUrl();
-  if (!url) {
-    Alert.alert('قريباً بإذن الله', 'لم يُنشر التطبيق بعد على متجر آيفون، ترقّبوا الإطلاق قريباً!');
-    return;
-  }
   try {
-    const canOpen = await Linking.canOpenURL(url);
-    if (canOpen) {
-      await Linking.openURL(url);
-    } else if (Platform.OS === 'android') {
+    if (Platform.OS === 'ios') {
+      if (IOS_APP_STORE_ID) {
+        await Linking.openURL(`itms-apps://itunes.apple.com/app/id${IOS_APP_STORE_ID}?action=write-review`);
+        return;
+      }
+      // قبل ما يتعبّى رقم المتجر: نافذة التقييم الأصلية تبع أبل (بتشتغل بدون رقم)
+      if (await StoreReview.isAvailableAsync()) {
+        await StoreReview.requestReview();
+        return;
+      }
+      Alert.alert('قريباً بإذن الله', 'لم يُنشر التطبيق بعد على متجر آيفون، ترقّبوا الإطلاق قريباً!');
+      return;
+    }
+
+    try {
+      await Linking.openURL(`market://details?id=${ANDROID_PACKAGE_NAME}`);
+    } catch {
       // لو تطبيق Play Store نفسه مش مثبت على الجهاز (نادر)، نفتح الرابط بالمتصفح
       await Linking.openURL(`https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE_NAME}`);
-    } else {
-      await Linking.openURL(`https://apps.apple.com/app/id${IOS_APP_STORE_ID}`);
     }
   } catch (e) {
     Alert.alert('تعذّر فتح المتجر', 'يرجى المحاولة لاحقاً.');

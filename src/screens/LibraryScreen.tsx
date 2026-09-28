@@ -7,7 +7,7 @@ import { ThemeContext } from '../theme/ThemeContext';
 import { heritageDarkTheme, heritageLightTheme } from '../theme/colorThemes';
 import { styles } from '../theme/styles';
 import { HeritageIcons } from '../components/HeritageIcons';
-import { ExactImagePatternWall, HeritageArchBanner, TitleFlourish } from '../components/Decorative';
+import { ExactImagePatternWall, HeritageArchBanner, TitleFlourish, useBackgroundScroll } from '../components/Decorative';
 import { DhikrPulseCard } from '../components/DhikrPulseCard';
 import { formatArabicNumbers } from '../utils/formatters';
 import { logStat } from '../utils/statsLogger';
@@ -96,9 +96,12 @@ function LibraryScreen({ navigation, hapticEnabled, fontSize, route }: any) {
     await AsyncStorage.setItem(`@adhkar_date_${sectionKey}`, todayStr);
   };
 
+  // parallax: بيحرّك نقش الخلفية مع التمرير (خيار الخلفية ٣)
+  const bgScroll = useBackgroundScroll();
+
   return (
     <ExactImagePatternWall isDarkMode={isDarkMode}>
-      <Animated.ScrollView entering={FadeIn.duration(400)} contentContainerStyle={{ padding: 15 }}>
+      <Animated.ScrollView entering={FadeIn.duration(400)} contentContainerStyle={{ padding: 15 }} onScroll={bgScroll} scrollEventThrottle={16}>
         <HeritageArchBanner title="مكتبة الأذكار" textColor={themeColors.text.color} isDarkMode={isDarkMode} />
 
         <View style={styles.menuContainer}>

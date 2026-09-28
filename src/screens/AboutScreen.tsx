@@ -1,11 +1,12 @@
 import React, { useContext } from 'react';
+import Animated from 'react-native-reanimated';
 import { Text, View, ScrollView, TouchableOpacity, Linking, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { ThemeContext } from '../theme/ThemeContext';
 import { heritageDarkTheme, heritageLightTheme } from '../theme/colorThemes';
 import { styles } from '../theme/styles';
-import { ExactImagePatternWall, HeritageArchBanner } from '../components/Decorative';
+import { ExactImagePatternWall, HeritageArchBanner, useBackgroundScroll } from '../components/Decorative';
 import { openStoreForRating } from '../utils/rateApp';
 
 // ==========================================
@@ -22,9 +23,12 @@ function AboutScreen({ route, navigation }: { route: any; navigation: any }) {
     Linking.openURL(`mailto:masra.al.rasul.app@gmail.com?subject=${encodeURIComponent('تواصل من مستخدم تطبيق مسرى المسلم')}`);
   };
 
+  // parallax: بيحرّك نقش الخلفية مع التمرير (خيار الخلفية ٣)
+  const bgScroll = useBackgroundScroll();
+
   return (
     <ExactImagePatternWall isDarkMode={isDarkMode}>
-      <ScrollView contentContainerStyle={{ padding: 20 }}>
+      <Animated.ScrollView contentContainerStyle={{ padding: 20 }} onScroll={bgScroll} scrollEventThrottle={16}>
         <HeritageArchBanner title="عن التطبيق" textColor={themeColors.text.color} isDarkMode={isDarkMode} />
 
         <View style={[styles.card, themeColors.card, { padding: 22, alignItems: 'center', marginBottom: 16 }]}>
@@ -36,8 +40,14 @@ function AboutScreen({ route, navigation }: { route: any; navigation: any }) {
           <Text style={[themeColors.text, { fontSize: fontSize + 4, fontWeight: 'bold', marginBottom: 4 }]}>
             مسرى المسلم
           </Text>
-          <Text style={[themeColors.subText, { fontSize: fontSize - 4, marginBottom: 14 }]}>
+          <Text style={[themeColors.subText, { fontSize: fontSize - 4, marginBottom: 4 }]}>
             الإصدار {appVersion}
+          </Text>
+          <Text style={[themeColors.subText, { fontSize: fontSize - 7, marginBottom: 14, letterSpacing: 0.3 }]}>
+            Powered by Mohamad Jammal
+          </Text>
+           <Text style={[themeColors.subText, { fontSize: fontSize - 7, marginBottom: 14, letterSpacing: 0.3 }]}>
+            Ass: Aiham Jabareen
           </Text>
           <Text style={[themeColors.text, { fontSize: fontSize - 3, textAlign: 'center', lineHeight: 24 }]}>
             تطبيق يومي يجمع أذكار الصباح والمساء، مواقيت الصلاة والقبلة، التسبيح، وآيات وأحاديث مختارة — رفيقك لذكر الله في يومك.
@@ -58,7 +68,7 @@ function AboutScreen({ route, navigation }: { route: any; navigation: any }) {
               ⭐ قيّم التطبيق
             </Text>
             <Text style={[themeColors.subText, { fontSize: fontSize - 6, marginTop: 2 }]}>
-              تقييمك يدعمنا ويساعد على وصول التطبيق لأشخاص أكثر
+              تقييمك يدعمنا ويساعد على وصول التطبيق.
             </Text>
           </View>
         </TouchableOpacity>
@@ -93,9 +103,9 @@ function AboutScreen({ route, navigation }: { route: any; navigation: any }) {
         </TouchableOpacity>
 
         <Text style={[themeColors.subText, { textAlign: 'center', fontSize: fontSize - 6, marginTop: 26, lineHeight: 20 }]}>
-          صُمم بنية خالصة لله، نسأل الله أن ينفع به. جزاكم الله خيراً على استخدامكم للتطبيق.
+          صُمم بنية خالصة لله، نسأل الله أن ينفع به. جزيتم خيراً.
         </Text>
-      </ScrollView>
+      </Animated.ScrollView>
     </ExactImagePatternWall>
   );
 }

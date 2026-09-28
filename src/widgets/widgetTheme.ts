@@ -111,17 +111,21 @@ export const PREMIUM_BACKGROUND_SVG = `
 export type PrayerIconKey = 'Fajr' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha';
 
 export function prayerIconSvg(key: PrayerIconKey, color: string): string {
+  // ملاحظة v12: استبدلنا الأيقونات المعبّأة (filled) بأيقونات خطية
+  // (line icons) مأخوذة حرفياً من ملف الـHTML المرجعي يلي بعته المستخدم
+  // (نفس مسارات SVG بالضبط، بس مع "color" ديناميكي بدل currentColor
+  // الثابت لأنه SvgWidget بمكتبة الويدجت بده نص SVG جاهز بلون صريح).
   switch (key) {
     case 'Fajr':
-      return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M15.2 3.3a8.2 8.2 0 1 0 5.1 7.6A6.6 6.6 0 0 1 15.2 3.3z" fill="${color}"/></svg>`;
+      return `<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="${color}" stroke-width="1.8"><path d="M4 22H24" stroke-linecap="round"/><path d="M7 18C7 14.134 10.134 11 14 11C17.866 11 21 14.134 21 18" stroke-linecap="round"/><line x1="14" y1="4" x2="14" y2="7" stroke-linecap="round"/><line x1="6.5" y1="7.5" x2="8.8" y2="9.8" stroke-linecap="round"/><line x1="21.5" y1="7.5" x2="19.2" y2="9.8" stroke-linecap="round"/></svg>`;
     case 'Dhuhr':
-      return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="4.6" fill="${color}"/><g stroke="${color}" stroke-width="1.6" stroke-linecap="round"><path d="M12 2.2v2.6M12 19.2v2.6M2.2 12h2.6M19.2 12h2.6M5.4 5.4l1.8 1.8M16.8 16.8l1.8 1.8M5.4 18.6l1.8-1.8M16.8 7.2l1.8-1.8"/></g></svg>`;
+      return `<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="${color}" stroke-width="1.8"><circle cx="14" cy="14" r="5"/><line x1="14" y1="3" x2="14" y2="6" stroke-linecap="round"/><line x1="14" y1="22" x2="14" y2="25" stroke-linecap="round"/><line x1="3" y1="14" x2="6" y2="14" stroke-linecap="round"/><line x1="22" y1="14" x2="25" y2="14" stroke-linecap="round"/><line x1="6.2" y1="6.2" x2="8.3" y2="8.3" stroke-linecap="round"/><line x1="19.7" y1="19.7" x2="21.8" y2="21.8" stroke-linecap="round"/><line x1="6.2" y1="21.8" x2="8.3" y2="19.7" stroke-linecap="round"/><line x1="19.7" y1="8.3" x2="21.8" y2="6.2" stroke-linecap="round"/></svg>`;
     case 'Asr':
-      return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="13" r="4.2" fill="${color}"/><g stroke="${color}" stroke-width="1.4" stroke-linecap="round"><path d="M12 5.2v2M4.6 13h2M17.4 13h2M7.4 8.4l1.4 1.4M15.2 9.8l1.4-1.4"/></g><path d="M4 19h16" stroke="${color}" stroke-width="1.3" stroke-linecap="round" opacity="0.55"/></svg>`;
+      return `<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="${color}" stroke-width="1.8"><circle cx="14" cy="14" r="4.5"/><path d="M4 23H24" stroke-linecap="round"/><line x1="14" y1="3" x2="14" y2="5.5" stroke-linecap="round"/><line x1="5.5" y1="10" x2="7.5" y2="11.5" stroke-linecap="round"/><line x1="22.5" y1="10" x2="20.5" y2="11.5" stroke-linecap="round"/></svg>`;
     case 'Maghrib':
-      return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 14a6 6 0 0 1 12 0z" fill="${color}"/><path d="M3.4 14h17.2" stroke="${color}" stroke-width="1.4" stroke-linecap="round"/><path d="M5.2 17.4h13.6M7 20h10" stroke="${color}" stroke-width="1.1" stroke-linecap="round" opacity="0.55"/></svg>`;
+      return `<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="${color}" stroke-width="1.8"><path d="M4 20H24" stroke-linecap="round"/><path d="M7 19C7 15.134 10.134 12 14 12C17.866 12 21 15.134 21 19" stroke-linecap="round"/><line x1="14" y1="19" x2="14" y2="7" stroke-linecap="round"/><path d="M11.5 9.5L14 7L16.5 9.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     case 'Isha':
-      return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14.8 3.6a7.6 7.6 0 1 0 4.9 7.1A6.1 6.1 0 0 1 14.8 3.6z" fill="${color}"/><path d="M19.4 3.2l0.5 1.2 1.2 0.5-1.2 0.5-0.5 1.2-0.5-1.2-1.2-0.5 1.2-0.5z" fill="${color}"/></svg>`;
+      return `<svg viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg"><path d="M19 14.5C18.8 19.5 14.5 23 9.5 22.5C7.2 22.2 5 21 3.5 19.3C5.5 19.8 8.5 19.2 10.5 17.5C13 15.3 13.5 11.5 12 8.5C11.5 7.5 10.5 6.7 9.5 6.2C14.5 5.5 19 9.5 19 14.5Z" fill="${color}" fill-opacity="0.9" stroke="${color}" stroke-width="0.5" stroke-linejoin="round"/><circle cx="21" cy="7" r="1.5" fill="${color}"/></svg>`;
     default:
       return '';
   }
@@ -377,10 +381,134 @@ export const PRAYER_ARCH_CARD_SVG = `
 </svg>
 `.trim();
 
-// حاوية خفيفة (خلفية شبه شفافة + حد  ذهبي رفيع) لصف الصلوات الخمس —
+// حاوية خفيفة (خلفية شبه شفافة + حد ذهبي رفيع) لصف الصلوات الخمس —
 // viewBox نسبي 400×90، جاهزة لنفس أسلوب OverlapWidget المتداخل.
 export const BOTTOM_PRAYERS_CONTAINER_SVG = `
 <svg viewBox="0 0 400 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
   <rect x="1" y="1" width="398" height="88" rx="12" fill="#0F2E24" fill-opacity="0.5" stroke="#C9A227" stroke-width="1" stroke-opacity="0.55"/>
+</svg>
+`.trim();
+
+// ==========================================
+// 🕌 النسخة "القصر" (v12) — المستخدم بعت ملف HTML كامل (Tailwind + خطوط
+// جوجل + gradients عبر CSS) كنموذج مرجعي دقيق، وسأل ليش ما نستعمله هو
+// نفسه جوا ملف الويدجت. الجواب التقني: ملف الـHTML هاد بيشتغل بمتصفح
+// وب فعلي (فيه Tailwind CDN، خطوط جوجل، CSS gradients، box-shadow،
+// backdrop-blur، animations...) — وويدجت الشاشة الرئيسية بالأندرويد
+// (RemoteViews) مش متصفح إطلاقاً، ولا حتى WebView (ممنوع أصلاً بويدجتس
+// الشاشة الرئيسية). فمكتبة react-native-android-widget ما "بتشغّل"
+// HTML/CSS — هي بس بتحوّل مجموعة محدودة من المكوّنات (FlexWidget,
+// TextWidget, SvgWidget...) لعناصر أندرويد أصلية (View/TextView/...)،
+// فملف الـHTML هاد حرفياً ما فيه طريقة "يشتغل" جوا الويدجت مهما كان
+// شكله.
+//
+// اللي فينا نعمله (وهو بالضبط روح طلب المستخدم — "خلّيها ملف منفصل
+// ومربوطة بمواقيتنا الحقيقية"): هيك أصلاً الوضع الحالي — widgetTheme.ts
+// (هاد الملف) هو "ملف التصميم" المنفصل، وAllPrayerTimesWidget.tsx هو
+// "ملف المنطق" يلي بياخد مواقيت الصلاة الحقيقية (props: timings/
+// activeName/nextPrayerTime) ويعرضها بالتصميم المعرّف هون. بالإضافة،
+// أخدنا من ملف الـHTML مسارات SVG الحقيقية (شعار قبة الصخرة، شكل زخارف
+// الزوايا، شكل النجمة الثمانية) ولزقناها هون حرفياً — نفس الشكل تماماً،
+// بس عم يترسم عبر SvgWidget (المدعوم فعلياً بالويدجت) بدل CSS/HTML
+// (غير مدعوم إطلاقاً).
+
+// شعار قبة الصخرة الذهبي — نفس رسمة الـSVG من الملف المرجعي حرفياً
+// (نفس نقاط المسارات، فقط غيّرنا id الـgradient حتى ما يتصادم مع أي
+// svg ثاني بنفس الصفحة).
+export function domeOfRockEmblemSvg(): string {
+  return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <path d="M32 4 C32.8 4 33.5 4.5 33.5 5.2 C33 6.2 33 7.8 34.5 8.5 C32 8.5 31 7 31 5.2 C31 4.5 31.4 4 32 4 Z" fill="#F8E7AB"/>
+    <path d="M32 8 L32 14" stroke="#F8E7AB" stroke-width="1.5"/>
+    <path d="M22 28 C22 17 26 14 32 14 C38 14 42 17 42 28 Z" fill="url(#widgetDomeGold)"/>
+    <rect x="20" y="28" width="24" height="6" rx="1" fill="#C9A227"/>
+    <line x1="24" y1="28" x2="24" y2="34" stroke="#7A5C0E" stroke-width="0.8"/>
+    <line x1="28" y1="28" x2="28" y2="34" stroke="#7A5C0E" stroke-width="0.8"/>
+    <line x1="32" y1="28" x2="32" y2="34" stroke="#7A5C0E" stroke-width="0.8"/>
+    <line x1="36" y1="28" x2="36" y2="34" stroke="#7A5C0E" stroke-width="0.8"/>
+    <line x1="40" y1="28" x2="40" y2="34" stroke="#7A5C0E" stroke-width="0.8"/>
+    <path d="M12 34 L52 34 L50 49 L14 49 Z" fill="#0B3026" stroke="#D4AF37" stroke-width="1.2"/>
+    <path d="M17 49 L17 40 C17 38 19 38 19 40 L19 49" stroke="#E5BE53" stroke-width="1"/>
+    <path d="M23 49 L23 40 C23 38 25 38 25 40 L25 49" stroke="#E5BE53" stroke-width="1"/>
+    <path d="M29 49 L29 39 C29 37 31 37 31 39 L31 49" stroke="#F8E7AB" stroke-width="1.2"/>
+    <path d="M35 49 L35 39 C35 37 37 37 37 39 L37 49" stroke="#F8E7AB" stroke-width="1.2"/>
+    <path d="M41 49 L41 40 C41 38 43 38 43 40 L43 49" stroke="#E5BE53" stroke-width="1"/>
+    <path d="M47 49 L47 40 C47 38 49 38 49 40 L49 49" stroke="#E5BE53" stroke-width="1"/>
+    <rect x="10" y="49" width="44" height="3" rx="0.5" fill="#C9A227"/>
+    <defs>
+      <linearGradient id="widgetDomeGold" x1="22" y1="14" x2="42" y2="28" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#FFF2B8"/>
+        <stop offset="0.4" stop-color="#E5BE53"/>
+        <stop offset="0.85" stop-color="#9E7818"/>
+      </linearGradient>
+    </defs>
+  </svg>`.trim();
+}
+
+// نجمة ثمانية "أنيقة" — نفس مسار الـSVG المستخدم بالملف المرجعي لنجمتي
+// أعلى/أسفل البطاقة، بلون ديناميكي بدل اللون الثابت بالـCSS.
+export function eightPointStarSvg(color: string, opacity = 1): string {
+  return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14.8 6.6L20 6.6L17.2 11.2L20 15.8L14.8 15.8L12 20.4L9.2 15.8L4 15.8L6.8 11.2L4 6.6L9.2 6.6Z" fill="${color}" opacity="${opacity}"/></svg>`.trim();
+}
+
+// خلفية "القصر" الكاملة — نفس فكرة LUXURY_PRAYER_BG_SVG (إطار ذهبي
+// مزدوج + وشم مسجد خفي جداً)، بس مع إضافتين حرفيتين من الملف المرجعي:
+//  ١) زخارف الزوايا الأربع بشكل "قوس ربعي + نقطة" (corner ornament) —
+//     نفس مسار الـSVG بالضبط من الملف (viewBox 0-40)، منعكس رياضياً
+//     لكل زاوية (mirror بالـx و/أو الـy) بدل استنساخه أربع مرات يدوياً.
+//  ٢) نجمة ثمانية صغيرة "تكسر" خط الإطار بالمنتصف أعلى وأسفل — بمستطيل
+//     صغير بلون الخلفية فوق خط الإطار (نفس تقنية bg-emerald-950 px-1.5
+//     بالـCSS الأصلي) ثم النجمة فوقه.
+// كل هاد مجرد SVG زخرفي صرف (٠ نص محروق)، فآمن ١٠٠٪ من مشكلة overflow
+// — بيتمطّط تلقائياً صح لأي حجم فعلي يختاره المستخدم بالضبط متل
+// LUXURY_PRAYER_BG_SVG.
+export const PALACE_PRAYER_BG_SVG = `
+<svg viewBox="0 0 400 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <path id="palaceStar8" d="M12 2L14.8 6.6L20 6.6L17.2 11.2L20 15.8L14.8 15.8L12 20.4L9.2 15.8L4 15.8L6.8 11.2L4 6.6L9.2 6.6Z"/>
+  </defs>
+
+  <rect x="0" y="0" width="400" height="200" rx="20" fill="#0B3026"/>
+
+  <g opacity="0.05" fill="#C9A227">
+    <rect x="150" y="118" width="100" height="2" rx="1"/>
+    <path d="M160,118 L160,100 A9,9 0 0 1 178,100 L178,118 Z"/>
+    <path d="M182,118 L182,94 A18,18 0 0 1 218,94 L218,118 Z"/>
+    <path d="M222,118 L222,100 A9,9 0 0 1 240,100 L240,118 Z"/>
+    <rect x="197" y="70" width="3" height="14"/>
+    <circle cx="198.5" cy="67" r="4"/>
+    <rect x="165" y="76" width="6" height="42"/>
+    <circle cx="168" cy="73" r="4.5"/>
+    <rect x="229" y="76" width="6" height="42"/>
+    <circle cx="232" cy="73" r="4.5"/>
+  </
+
+  <rect x="3" y="3" width="394" height="194" rx="17" fill="none" stroke="#C9A227" stroke-width="1.8" opacity="0.9"/>
+  <rect x="7" y="7" width="386" height="186" rx="14" fill="none" stroke="#C9A227" stroke-width="0.8" opacity="0.45"/>
+
+  <g transform="translate(4,4) scale(0.55)">
+    <path d="M0,0 L20,0 C20,10 10,20 0,20 Z" fill="#C9A227" opacity="0.28"/>
+    <path d="M2,2 L35,2 C30,12 20,18 2,18 Z" fill="none" stroke="#C9A227" stroke-width="1.5"/>
+    <circle cx="9" cy="9" r="2.5" fill="#E0B83F"/>
+  </g>
+  <g transform="translate(374,4) scale(0.55)">
+    <path d="M40,0 L20,0 C20,10 30,20 40,20 Z" fill="#C9A227" opacity="0.28"/>
+    <path d="M38,2 L5,2 C10,12 20,18 38,18 Z" fill="none" stroke="#C9A227" stroke-width="1.5"/>
+    <circle cx="31" cy="9" r="2.5" fill="#E0B83F"/>
+  </g>
+  <g transform="translate(4,174) scale(0.55)">
+    <path d="M0,40 L20,40 C20,30 10,20 0,20 Z" fill="#C9A227" opacity="0.28"/>
+    <path d="M2,38 L35,38 C30,28 20,22 2,22 Z" fill="none" stroke="#C9A227" stroke-width="1.5"/>
+    <circle cx="9" cy="31" r="2.5" fill="#E0B83F"/>
+  </g>
+  <g transform="translate(374,174) scale(0.55)">
+    <path d="M40,40 L20,40 C20,30 30,20 40,20 Z" fill="#C9A227" opacity="0.28"/>
+    <path d="M38,38 L5,38 C10,28 20,22 38,22 Z" fill="none" stroke="#C9A227" stroke-width="1.5"/>
+    <circle cx="31" cy="31" r="2.5" fill="#E0B83F"/>
+  </g>
+
+  <rect x="188" y="1" width="24" height="4" fill="#0B3026"/>
+  <use href="#palaceStar8" transform="translate(193,-4) scale(0.6)" fill="#E0B83F"/>
+  <rect x="188" y="195" width="24" height="4" fill="#0B3026"/>
+  <use href="#palaceStar8" transform="translate(193,190) scale(0.6)" fill="#E0B83F"/>
 </svg>
 `.trim();
