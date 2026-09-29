@@ -90,25 +90,28 @@ function StatsScreen({ navigation, route }: { navigation: any, route: any }) {
 
         {/* بطاقة سجل قضاء الصلوات الفائتة */}
         <View style={[styles.verseCard, themeColors.card]}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <View style={styles.trackerBadgeMini}>
-              <Text style={styles.trackerBadgeMiniText}>
-                {formatArabicNumbers(qadaList.length)} صلاة فائتة
-              </Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={[styles.verseBadgeTitle, themeColors.accentText, { fontSize: fontSize - 2, marginBottom: 0 }]}>
-                سجل الصلوات الفائتة والقضاء
-              </Text>
-              <HeritageIcons.Mosque size={20} color="#D4A373" />
-            </View>
+          {/* العنوان يمين، والرمز على يساره */}
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 6 }}>
+            <HeritageIcons.Mosque size={20} color="#D4A373" />
+            <Text style={[styles.verseBadgeTitle, themeColors.accentText, { fontSize: fontSize - 2, marginBottom: 0 }]}>
+              سجل الصلوات الفائتة والقضاء
+            </Text>
           </View>
 
+          {/* تحت العنوان: الجملة بس إذا ما في صلوات فائتة، وإلا العداد بالنص */}
           {qadaList.length === 0 ? (
             <Text style={[themeColors.subText, { textAlign: 'center', paddingVertical: 10, fontSize: fontSize - 4 }]}>
               ليس لديك أي صلوات فائتة مسجلة.
             </Text>
           ) : (
+            <View style={[styles.trackerBadgeMini, { alignSelf: 'center', marginTop: 10, marginBottom: 6 }]}>
+              <Text style={styles.trackerBadgeMiniText}>
+                {formatArabicNumbers(qadaList.length)} صلاة فائتة
+              </Text>
+            </View>
+          )}
+
+          {qadaList.length > 0 &&
             qadaList.map((item) => (
               <View key={item.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 9, borderBottomWidth: 0.8, borderColor: 'rgba(212,163,115,0.15)' }}>
                 <TouchableOpacity
@@ -123,12 +126,11 @@ function StatsScreen({ navigation, route }: { navigation: any, route: any }) {
                   <Text style={[themeColors.subText, { fontSize: fontSize - 6 }]}>{item.dayName} ({formatArabicNumbers(item.dateStr)})</Text>
                 </View>
               </View>
-            ))
-          )}
+            ))}
         </View>
 
         <View style={[styles.verseCard, themeColors.card]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 6, marginBottom: 14 }}>
             <HeritageIcons.Trophy size={20} color="#D4A373" />
             <Text style={[styles.verseBadgeTitle, themeColors.accentText, { fontSize: fontSize - 2, marginBottom: 0 }]}>
               الأوسمة والإنجازات
@@ -153,7 +155,7 @@ function StatsScreen({ navigation, route }: { navigation: any, route: any }) {
         </View>
 
         <View style={[styles.verseCard, themeColors.card]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 15 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 6, marginBottom: 15 }}>
             <HeritageIcons.Chart size={20} color="#D4A373" />
             <Text style={[styles.verseBadgeTitle, themeColors.accentText, { fontSize: fontSize - 2, marginBottom: 0 }]}>
               حصاد الأسبوع
@@ -168,13 +170,15 @@ function StatsScreen({ navigation, route }: { navigation: any, route: any }) {
                 onPress={() => setSelectedDayModal(item)}
                 activeOpacity={0.7}
               >
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={[themeColors.text, { fontSize: fontSize - 2, fontWeight: 'bold' }]}>{item.date} ({formatArabicNumbers(item.label)})</Text>
-                  <Text style={[themeColors.subText, { fontSize: fontSize - 3 }]}>
-                    {formatArabicNumbers(item.total)} نشاطًا مسجلًا • {formatArabicNumbers(percentage)}%
-                  </Text>
-                </View>
-                <View style={{ height: 10, backgroundColor: 'rgba(212,163,115,0.15)', borderRadius: 5, overflow: 'hidden' }}>
+                {/* اليوم والتاريخ يمين، وتحتهم التقدّم يمين كمان، وبعدين الشريط */}
+                <Text style={[themeColors.text, { fontSize: fontSize - 2, fontWeight: 'bold', textAlign: 'right' }]}>
+                  {item.date} ({formatArabicNumbers(item.label)})
+                </Text>
+                <Text style={[themeColors.subText, { fontSize: fontSize - 3, textAlign: 'right', marginTop: 2, marginBottom: 6 }]}>
+                  {formatArabicNumbers(item.total)} نشاطًا مسجلًا • {formatArabicNumbers(percentage)}%
+                </Text>
+                {/* الشريط بيتعبّى من اليمين (row-reverse) */}
+                <View style={{ height: 10, flexDirection: 'row-reverse', backgroundColor: 'rgba(212,163,115,0.15)', borderRadius: 5, overflow: 'hidden' }}>
                   <View style={{ width: `${percentage}%`, height: '100%', backgroundColor: '#D4A373', borderRadius: 5 }} />
                 </View>
               </TouchableOpacity>

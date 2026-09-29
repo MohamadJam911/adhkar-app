@@ -21,7 +21,7 @@ function SettingsScreen({ hapticEnabled, setHapticEnabled, fontSize, setFontSize
         
         {/* اختيار المظهر (فاتح / داكن / تلقائي) */}
         <View style={[styles.settingRowColumn, themeColors.card]}>
-          <Text style={[styles.settingLabel, themeColors.text, { marginBottom: 12, fontSize: fontSize - 2 }]}>المظهر</Text>
+          <Text style={[styles.settingLabel, themeColors.text, { marginBottom: 12, fontSize: fontSize - 2, textAlign: 'right' }]}>المظهر</Text>
           <View style={styles.segmentedButtonsRow}>
             {[
               { label: 'تلقائي', val: 'auto' as ThemeMode },
@@ -50,13 +50,14 @@ function SettingsScreen({ hapticEnabled, setHapticEnabled, fontSize, setFontSize
           </View>
         </View>
 
+        {/* العنوان يمين والمفتاح يسار (ترتيب عربي) */}
         <View style={[styles.settingRow, themeColors.card]}>
-          <Text style={[styles.settingLabel, themeColors.text, { fontSize: fontSize - 2 }]}>الاهتزاز اللمسي</Text>
           <Switch value={hapticEnabled} onValueChange={setHapticEnabled} />
+          <Text style={[styles.settingLabel, themeColors.text, { fontSize: fontSize - 2, textAlign: 'right' }]}>الاهتزاز اللمسي</Text>
         </View>
         
         <View style={[styles.settingRowColumn, themeColors.card]}>
-          <Text style={[styles.settingLabel, themeColors.text, { marginBottom: 10, fontSize: fontSize - 2 }]}>حجم النص</Text>
+          <Text style={[styles.settingLabel, themeColors.text, { marginBottom: 10, fontSize: fontSize - 2, textAlign: 'right' }]}>حجم النص</Text>
           <View style={styles.fontButtonsRow}>
             <TouchableOpacity style={[styles.fontBtn, themeColors.circleBtn, fontSize === 18 && styles.activeFontBtn]} onPress={() => setFontSize(18)}><Text style={[styles.fontBtnText, themeColors.circleText]}>18</Text></TouchableOpacity>
             <TouchableOpacity style={[styles.fontBtn, themeColors.circleBtn, fontSize === 22 && styles.activeFontBtn]} onPress={() => setFontSize(22)}><Text style={[styles.fontBtnText, themeColors.circleText]}>22</Text></TouchableOpacity>

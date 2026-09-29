@@ -46,9 +46,6 @@ function AboutScreen({ route, navigation }: { route: any; navigation: any }) {
           <Text style={[themeColors.subText, { fontSize: fontSize - 7, marginBottom: 14, letterSpacing: 0.3 }]}>
             Powered by Mohamad Jammal
           </Text>
-           <Text style={[themeColors.subText, { fontSize: fontSize - 7, marginBottom: 14, letterSpacing: 0.3 }]}>
-            Ass: Aiham Jabareen
-          </Text>
           <Text style={[themeColors.text, { fontSize: fontSize - 3, textAlign: 'center', lineHeight: 24 }]}>
             تطبيق يومي يجمع أذكار الصباح والمساء، مواقيت الصلاة والقبلة، التسبيح، وآيات وأحاديث مختارة — رفيقك لذكر الله في يومك.
           </Text>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Modal, FlatList, Alert } from 'react-native';
+import { Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Modal, FlatList, Alert, AppState } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
@@ -20,6 +21,12 @@ import { PALESTINE_CITIES, DAHRI_TIMES, getDahriCityOffset, getPalestineDstOffse
 import { scheduleAppNotifications } from '../services/notificationService';
 
 // --- 2. PRAYER TIMES SCREEN ---
+/** هل أول حرف "قوي" (عربي أو لاتيني) بالنص عربي؟ (نفس قاعدة Unicode لاتجاه الفقرة) */
+const startsWithArabic = (text: string): boolean => {
+  const match = text.match(/[؀-ۿݐ-ݿࢠ-ࣿA-Za-zÀ-ɏ]/);
+  return !!match && /[؀-ۿݐ-ݿࢠ-ࣿ]/.test(match[0]);
+};
+
 function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapticEnabled: boolean }) {
   const { isDarkMode } = useContext(ThemeContext);
   const themeColors = isDarkMode ? heritageDarkTheme : heritageLightTheme;
@@ -67,6 +74,26 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
 
   useEffect(() => {
     initializeLiveLocation();
+  }, []);
+
+  // ==========================================
+  // 🧭 البوصلة شغّالة بس وهي شاشة القبلة ظاهرة فعلاً
+  // ==========================================
+  // التبويبات بتخلّي الشاشة "مركّبة" بالخلفية بعد ما تنتقل لتبويب تاني —
+  // فكانت الحسّاسات (ومعها اهتزاز محاذاة القبلة) تضل شغّالة بكل الشاشات،
+  // وحتى والتطبيق بالخلفية على أندرويد. هلأ بتشتغل بس لما الشاشة ظاهرة
+  // (isFocused) والتطبيق بالمقدّمة (AppState = active)، وبتنطفي فوراً غير هيك.
+  const isFocused = useIsFocused();
+  const [appActive, setAppActive] = useState(AppState.currentState === 'active');
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => setAppActive(state === 'active'));
+    return () => sub.remove();
+  }, []);
+  const compassActive = isFocused && appActive;
+
+  useEffect(() => {
+    if (!compassActive) return;
+    let cancelled = false;
 
     // ==========================================
     // 🧭 مرشِّح تكميلي (Complementary Filter) لثبات اتجاه القبلة
@@ -152,7 +179,9 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
             applyAbsoluteCorrection(heading.magHeading);
           }
         });
+        if (cancelled) headingSubscription?.remove?.();
       } catch (e) {
+        if (cancelled) return;
         // مسار احتياطي (بيصير غالباً على أندرويد لما ما يتوفر
         // watchHeadingAsync): منحسب الاتجاه من المغناطيسية + التسارع معاً
         // (تعويض الميلان / tilt compensation)، مش من المغناطيسية لوحدها متل
@@ -191,6 +220,7 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
     })();
 
     return () => {
+      cancelled = true;
       if (headingSubscription && typeof headingSubscription.remove === 'function') {
         headingSubscription.remove();
       }
@@ -198,7 +228,7 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
       if (accelSubscription) accelSubscription.remove();
       if (gyroSubscription) gyroSubscription.remove();
     };
-  }, []);
+  }, [compassActive]);
 
   const initializeLiveLocation = async () => {
     try {
@@ -399,6 +429,7 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
   const absDiff = Math.abs(signedDiff);
 
   useEffect(() => {
+    if (!compassActive) return;
     if (qiblaDirection !== null) {
       const isNowAligned = absDiff <= 4;
       if (isNowAligned && !isAligned) {
@@ -410,7 +441,7 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
     }
-  }, [needleRotation, absDiff]);
+  }, [needleRotation, absDiff, compassActive]);
 
   const getSeniorGuidance = () => {
     if (isAligned) {
@@ -478,8 +509,22 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
 
         <View style={[styles.locationCard, themeColors.card, { padding: 16 }]}>
           <View style={{ marginBottom: 12 }}>
-            <Text style={[styles.locationTitle, themeColors.subText, { fontSize: fontSize - 4 }]}>موقعك الحالي • التوقيت الدهري</Text>
-            <Text style={[styles.locationNameText, themeColors.text, { fontSize: fontSize - 1, fontWeight: 'bold' }]}>{locationName}</Text>
+            <Text style={[styles.locationTitle, themeColors.subText, { fontSize: fontSize - 4, textAlign: 'right' }]}>موقعك الحالي • التوقيت الدهري</Text>
+            {/* اسم المدينة: عربي ← يمين، إنجليزي (ما انترجم) ← يسار — حسب أول حرف "قوي" بالاسم */}
+            <Text
+              style={[
+                styles.locationNameText,
+                themeColors.text,
+                {
+                  fontSize: fontSize - 1,
+                  fontWeight: 'bold',
+                  textAlign: startsWithArabic(locationName) ? 'right' : 'left',
+                  writingDirection: startsWithArabic(locationName) ? 'rtl' : 'ltr',
+                },
+              ]}
+            >
+              {locationName}
+            </Text>
           </View>
           
           <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
