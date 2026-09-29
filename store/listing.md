@@ -84,7 +84,8 @@ Your daily companion for the remembrance of Allah, in an elegant green-and-gold 
 | Field | Value |
 |---|---|
 | Privacy policy URL | `https://mohamadjam911.github.io/adhkar-app/privacy-policy.html` (after enabling GitHub Pages — see README) |
-| Support URL / email | masra.al.rasul.app@gmail.com |
+| Support URL | `https://mohamadjam911.github.io/adhkar-app/support.html` |
+| Support email | masra.al.rasul.app@gmail.com |
 | Copyright (Apple) | 2026 Mohamad Jammal |
 
 ---
