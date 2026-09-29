@@ -19,5 +19,12 @@
   "cli": {
     "appVersionSource": "local",
     "promptToConfigurePushNotifications": false
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6817377040"
+      }
+    }
   }
 }

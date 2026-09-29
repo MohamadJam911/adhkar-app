@@ -9,10 +9,8 @@ import * as StoreReview from 'expo-store-review';
 // "لا شكراً" ما منسأله مرة تانية أبداً، ولو ضغط "ذكرني لاحقاً" منرجع نسأله
 // بعد ١٠ فتحات إضافية بس.
 const ANDROID_PACKAGE_NAME = 'com.mohamad.masra';
-// ⚠️ التطبيق لسا مو منشور على App Store — لما ينشر، عبّي هون رقم الـ
-// "Apple App ID" (بتلاقيه بصفحة التطبيق على App Store Connect بعد إنشائه)
-// حتى يشتغل رابط التقييم بالآيفون صح.
-const IOS_APP_STORE_ID = '';
+// رقم الـ"Apple ID" تبع التطبيق بـApp Store Connect (App Information)
+const IOS_APP_STORE_ID = '6817377040';
 
 const RATE_PROMPT_LAUNCH_THRESHOLD = 5;
 const RATE_PROMPT_SNOOZE_GAP = 10;
