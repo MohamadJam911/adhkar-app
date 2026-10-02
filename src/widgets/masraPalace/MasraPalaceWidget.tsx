@@ -26,10 +26,11 @@ import type { MasraPalaceViewModel, PalacePrayerCell } from './MasraPalaceWidget
 
 const APP_NAME = 'مسرى المسلم';
 const REF_WIDTH = 400;
-// Real design height in grid units (121 header + ≈80 prayer row with large
-// text + margins) — taller than the 200 reference because names and times
-// are enlarged for older users, so s is computed from it to avoid overflow.
-const REF_HEIGHT = 225;
+// Real design height in grid units (16 top padding + 118 arch card + ≈78
+// prayer row + 18 bottom padding). Cairo and Amiri have tall line boxes
+// (≈1.9× and ≈2.7× the font size), so the large text is budgeted here and s
+// is computed from this height to avoid overflow.
+const REF_HEIGHT = 234; // includes a small safety margin
 
 type ModelProps = {
   model: MasraPalaceViewModel;
@@ -63,8 +64,8 @@ export function MasraPalaceWidget({ model, widgetWidth, widgetHeight }: MasraPal
           width: 'match_parent',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          paddingTop: 21 * s,
-          paddingBottom: 20 * s,
+          paddingTop: 16 * s,
+          paddingBottom: 18 * s,
           paddingHorizontal: 20 * s,
         }}
       >
@@ -155,10 +156,10 @@ function NextPrayerArchCard({ model, s }: ScaledProps) {
   const badge = next?.isTomorrow ? 'أقرب صلاة • غداً' : 'أقرب صلاة';
 
   // Fixed height (not wrap_content) because the SVG arch needs its size up
-  // front: 100 units = card content (≈88, measured on device with the tall
-  // Amiri font) + 6 units of margin above and below.
-  const cardWidth = 135 * s;
-  const cardHeight = 100 * s;
+  // front: 118 units = card content (badge ≈16 + prayer name ≈66 with the
+  // tall Amiri font + countdown 24) + 6 units of margin above and below.
+  const cardWidth = 150 * s;
+  const cardHeight = 118 * s;
 
   return (
     <OverlapWidget style={{ width: cardWidth, height: cardHeight }}>
@@ -184,7 +185,7 @@ function NextPrayerArchCard({ model, s }: ScaledProps) {
         >
           <TextWidget
             text={badge}
-            style={{ fontFamily: F.label, fontSize: 7 * s, color: C.emerald950, textAlign: 'center' }}
+            style={{ fontFamily: F.label, fontSize: 8.5 * s, color: C.emerald950, textAlign: 'center' }}
           />
         </FlexWidget>
 
@@ -192,7 +193,7 @@ function NextPrayerArchCard({ model, s }: ScaledProps) {
           text={next?.label || '—'}
           style={{
             fontFamily: F.calligraphy,
-            fontSize: 20 * s,
+            fontSize: 24 * s,
             color: C.ivory100,
             textAlign: 'center',
             textShadowColor: '#000000',
@@ -204,7 +205,7 @@ function NextPrayerArchCard({ model, s }: ScaledProps) {
         {/* HH : MM countdown — redrawn every minute by masra-widget-clock */}
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TimeBox value={next?.remainingHours || '--'} s={s} />
-          <TextWidget text=":" style={{ fontFamily: F.timer, fontSize: 11 * s, color: C.goldBright, marginHorizontal: 4 * s }} />
+          <TextWidget text=":" style={{ fontFamily: F.timer, fontSize: 14 * s, color: C.goldBright, marginHorizontal: 4 * s }} />
           <TimeBox value={next?.remainingMinutes || '--'} s={s} />
         </FlexWidget>
       </FlexWidget>
@@ -216,8 +217,8 @@ function TimeBox({ value, s }: { value: string; s: number }) {
   return (
     <FlexWidget
       style={{
-        width: 22 * s,
-        height: 20 * s,
+        width: 29 * s,
+        height: 24 * s,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: C.timeBoxBg,
@@ -226,7 +227,7 @@ function TimeBox({ value, s }: { value: string; s: number }) {
         borderRadius: 3 * s,
       }}
     >
-      <TextWidget text={value} style={{ fontFamily: F.timer, fontSize: 12 * s, color: C.goldLight, textAlign: 'center' }} />
+      <TextWidget text={value} style={{ fontFamily: F.timer, fontSize: 15 * s, color: C.goldLight, textAlign: 'center' }} />
     </FlexWidget>
   );
 }
@@ -241,7 +242,7 @@ function PrayerCell({ prayer, s }: { prayer: PalacePrayerCell; s: number }) {
         alignItems: 'center',
         justifyContent: 'center',
         marginHorizontal: 3 * s,
-        paddingVertical: 5 * s,
+        paddingVertical: 3 * s,
         borderRadius: 8 * s,
         borderWidth: active ? 1.5 : 1,
         borderColor: active ? C.activeCellBorder : C.inactiveCellBorder,
@@ -250,16 +251,16 @@ function PrayerCell({ prayer, s }: { prayer: PalacePrayerCell; s: number }) {
     >
       <SvgWidget
         svg={palacePrayerIconSvg(prayer.key, active ? C.goldBright : C.ivory300)}
-        style={{ width: 18 * s, height: 18 * s, marginBottom: 1 * s }}
+        style={{ width: 13 * s, height: 13 * s, marginBottom: 1 * s }}
       />
       {/* Large, bold names and times for easy reading */}
       <TextWidget
         text={prayer.label}
-        style={{ fontFamily: F.label, fontSize: 13.5 * s, color: active ? C.goldBright : C.ivory100, textAlign: 'center' }}
+        style={{ fontFamily: F.label, fontSize: 16 * s, color: active ? C.goldBright : C.ivory100, textAlign: 'center' }}
       />
       <TextWidget
         text={prayer.time}
-        style={{ fontFamily: F.label, fontSize: 12 * s, color: active ? C.ivory50 : C.ivory200, textAlign: 'center' }}
+        style={{ fontFamily: F.label, fontSize: 15 * s, color: active ? C.ivory50 : C.ivory200, textAlign: 'center' }}
       />
     </FlexWidget>
   );
