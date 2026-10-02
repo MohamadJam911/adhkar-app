@@ -2,7 +2,7 @@
   "expo": {
     "name": "مسرى المسلم",
     "slug": "adhkar-app",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -129,7 +129,7 @@
             {
               "name": "MasraPalaceWidget",
               "label": "مسرى المسلم — القصر الزمردي",
-              "description": "تصميم فاخر بالأخضر الزمردي والذهبي: الصلاة القادمة ومواقيت اليوم كاملة من التقويم الدهري، مع التاريخ الهجري ومدينتك",
+              "description": "تصميم فاخر بالأخضر الزمردي والذهبي: الصلاة القادمة ومواقيت اليوم كاملة، مع التاريخ الهجري ومدينتك",
               "minWidth": "250dp",
               "minHeight": "110dp",
               "targetCellWidth": 4,
