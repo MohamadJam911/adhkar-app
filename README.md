@@ -1,142 +1,151 @@
-# مسرى المسلم — Masra Al-Muslim
+# Masra Al-Muslim (مسرى المسلم)
 
-A daily Islamic companion app for Android and iPhone: morning and evening adhkar, prayer times from the Palestinian **Dahri calendar** (and astronomical calculation everywhere else), Qibla direction, a digital misbaha, and selected Quran verses, hadiths and the Names of Allah — with home-screen widgets on both platforms.
+A daily Islamic companion app for iPhone and Android. It brings together the morning and evening adhkar (remembrances), accurate prayer times, the Qibla direction, a digital misbaha (prayer-bead counter), and a daily Quran verse, hadith and Name of Allah — all in an Arabic, heritage-inspired green-and-gold design, with home-screen widgets on both platforms.
 
-تطبيق يومي يجمع أذكار الصباح والمساء، مواقيت الصلاة حسب **التقويم الدهري** (وبالحساب الفلكي خارج فلسطين)، اتجاه القبلة، السبحة الرقمية، وآيات وأحاديث مختارة وأسماء الله الحسنى — مع ويدجتس للشاشة الرئيسية على أندرويد والآيفون.
+The app has no accounts, no ads and no data collection: everything stays on the device.
 
-Built with **Expo (SDK 57)** and **React Native**, written in **TypeScript**.
+**Available on the App Store:** [apps.apple.com/app/id6817377040](https://apps.apple.com/app/id6817377040)
+
+<p align="center">
+  <img src="store/screenshots/iphone/01-home.png" width="200" alt="Home screen">
+  <img src="store/screenshots/iphone/02-prayer-times.png" width="200" alt="Prayer times">
+  <img src="store/screenshots/iphone/04-misbaha.png" width="200" alt="Digital misbaha">
+  <img src="store/screenshots/iphone/05-widgets.png" width="200" alt="Home-screen widgets">
+</p>
+
+More screenshots, for iPhone and iPad, are in [`store/screenshots/`](store/screenshots).
 
 ---
 
 ## Features
 
-| | |
-|---|---|
-| **Adhkar library** | Morning, evening and other adhkar, with daily progress tracking and statistics |
-| **Prayer times** | Dahri calendar for Palestine and its surroundings (per-town offsets, converted to the device clock); astronomical calculation ([adhan](https://github.com/batoulapps/adhan-js)) everywhere else, with the method used in the user's country (Umm al-Qura, Egyptian, ISNA, Karachi + Hanafi Asr, …). GPS or a chosen city, monthly Imsakiya, shareable as an image |
-| **Qibla** | Compass using device heading (falls back to magnetometer + accelerometer) |
-| **Digital misbaha** | 33 / 100 / free targets; 33 animated beads light up per tap, with a gold pulse at the start of each new round |
-| **Daily content** | A Quran verse with tafsir, a sahih hadith with explanation, and one of the 99 Names of Allah (fully vocalised) — verse and hadith shareable as text or image cards |
-| **Notifications** | Prayer times and adhkar reminders, scheduled per day from the Dahri times (5 days ahead on iOS, 14 on Android) and refreshed on every launch |
-| **Home-screen widgets** | Android: a 2×2 next-prayer widget and a 4×2 full-times widget, refreshed every minute. iPhone: small and medium WidgetKit widgets with a live, second-by-second countdown |
-| **Themes** | Light and dark mode, adjustable font size, optional haptics |
+- **Adhkar library.** Morning, evening, after-prayer, sleep and waking adhkar. Each dhikr has its own counter, and the app tracks daily progress.
+- **Prayer times.** Accurate times for any location, from GPS or a city chosen from a list. It also shows a monthly timetable (Imsakiya), the next prayer with a countdown, the Duha window and the last third of the night. Today's times or the whole month can be shared as an image. See [How prayer times are calculated](#how-prayer-times-are-calculated).
+- **Qibla compass.** A stable compass that combines the gyroscope with the magnetic heading, gives turn-left / turn-right guidance, and vibrates gently when the phone points at the Kaaba.
+- **Digital misbaha.** Targets of 33, 100 or free counting. 33 animated beads light up one by one, with a gold pulse at the start of each new round.
+- **Daily content.** A Quran verse with a short explanation, an authenticated hadith with its source and explanation, and all 99 Names of Allah, fully vocalised. Verses and hadiths can be shared as text or as image cards.
+- **Reminders.** Local notifications for each prayer and for the adhkar. They are scheduled for each specific day, so they stay exact even though prayer times shift daily.
+- **Home-screen widgets.**
+  - iPhone: small and medium WidgetKit widgets with a live, second-by-second countdown.
+  - Android: a 2×2 and a 4×2 widget, redrawn every minute.
+- **Statistics.** A weekly summary, achievements, and a tracker for missed (qada) prayers.
+- **Comfort.** Light and dark mode, adjustable text size and optional haptics.
 
 ---
 
-## Getting started
+## How prayer times are calculated
 
-Requirements: Node.js 20+, npm, and an [Expo](https://expo.dev) account for builds.
+All prayer times — on the screen, in the widgets and in the notifications — come from one module, `src/utils/prayerTimesEngine.ts`.
+
+1. **In Palestine and its immediate surroundings** (within about 60 km of a reference town), times come from the traditional **Dahri calendar** table. Each town has its own offset of a few minutes. The table is written in Palestine standard time (UTC+2) and is converted to the phone's clock, which handles summer time automatically.
+2. **Everywhere else**, times are **calculated astronomically** with the open-source [adhan](https://github.com/batoulapps/adhan-js) library. The calculation method is the one used in the user's country:
+   - Saudi Arabia: Umm al-Qura
+   - Egypt: Egyptian General Authority of Survey
+   - USA and Canada: ISNA
+   - Pakistan and India: Karachi, with the Hanafi Asr
+   - other countries: Muslim World League
+
+   High-latitude locations use adhan's recommended rule. The screen then says «حساب فلكي» (astronomical calculation) and names the method.
+
+---
+
+## Technology
+
+- **Expo SDK 57** and **React Native**, written in **TypeScript**
+- **Native widgets:**
+  - iPhone: a SwiftUI WidgetKit extension (`targets/widget`), connected with `@bacons/apple-targets`
+  - Android: `react-native-android-widget`, plus a small Kotlin Expo module that refreshes the widgets every minute
+- **Notifications:** `expo-notifications`, with local notifications only (no server)
+- **Sensors:** `expo-sensors` and `expo-location` for the compass and the location
+- **Releases:** builds with **EAS Build**, and JavaScript-only changes shipped instantly with **EAS Update**
+
+---
+
+## Running the project
+
+You need Node.js 20 or newer, npm, and an [Expo](https://expo.dev) account for builds.
 
 ```bash
 npm install
 npx expo start
 ```
 
-> **Note:** the app uses native modules (widgets, notifications, sensors), so it needs a **development build** or a full build — most features do not work in Expo Go.
+The app uses native modules (widgets, notifications, sensors), so it needs a development build or a full build. Most features do not work in Expo Go.
 
----
+### Building
 
-## Building
+The native `android/` and `ios/` folders are generated automatically and are not stored in the repository.
 
-The native `android/` and `ios/` folders are generated (not committed). EAS runs `expo prebuild` automatically in the cloud.
-
-**Android** — local build (on Linux/WSL):
+To build a test version for Android locally (on Linux or WSL):
 
 ```bash
-export ORG_GRADLE_PROJECT_reactNativeArchitectures=arm64-v8a   # faster, ~42 MB APK
+export ORG_GRADLE_PROJECT_reactNativeArchitectures=arm64-v8a   # faster build, ~42 MB APK
 eas build --platform android --profile preview --local
 ```
 
-**iPhone / iPad** — cloud build (an Apple Developer account is required; register test devices first):
+To build a test version for iPhone in the cloud (this needs an Apple Developer account, and the test devices must be registered first):
 
 ```bash
 eas device:create
 eas build --platform ios --profile preview
 ```
 
-| Profile | Use |
-|---|---|
-| `preview` | Internal testing (Android APK / iOS ad-hoc), update channel `preview` |
-| `production` | Store builds, update channel `production` |
+There are two build profiles:
 
-### Over-the-air updates
+- **preview:** test builds (an Android APK or an iOS ad-hoc build) that receive updates from the `preview` channel.
+- **production:** store builds that receive updates from the `production` channel.
 
-Changes to JavaScript/TypeScript only (screens, text, data, designs) can be shipped without a rebuild. Each build listens to the channel of its profile, so publish to the matching branch:
+### Updating without a new build
+
+Changes to JavaScript or TypeScript only (screens, text, data, designs) can reach users without going through the stores again:
 
 ```bash
-eas update --branch preview      # test builds (preview profile)
-eas update --branch production   # store builds (production profile)
+eas update --branch preview      # test builds
+eas update --branch production   # App Store / Google Play builds
 ```
 
-A **new build** is required after changing `app.json`, adding or removing native packages, or editing `modules/` or `targets/`.
+A new build is needed after changing `app.json`, adding or removing native packages, or editing `modules/` or `targets/`.
 
----
-
-## Releasing to the stores
-
-Store builds use the `production` profile (auto-incremented build numbers). Build Android **without** the arm64-only variable so the bundle supports every device:
+### Releasing to the stores
 
 ```bash
-eas build --platform android --profile production   # .aab for Google Play
 eas build --platform ios --profile production
-eas submit --platform ios                          # uploads to App Store Connect / TestFlight
+eas submit --platform ios
+eas build --platform android --profile production   # .aab for Google Play
 ```
 
-- Listing text, keywords, privacy and rating answers: [`store/listing.md`](store/listing.md)
-- Public privacy policy page: [`docs/privacy-policy.html`](docs/privacy-policy.html), generated from the in-app text with `node scripts/build-policy-page.js`. Publish it with **GitHub → Settings → Pages → Branch `main`, folder `/docs`** (free Pages requires a public repository; otherwise host the file anywhere public).
-- After the app is created in App Store Connect, set `IOS_APP_STORE_ID` in `src/utils/rateApp.ts` so «قيّم الآن» opens the App Store page.
-- Google Play: new personal developer accounts must run a closed test with at least 12 testers for 14 days before production access.
+For Google Play, build without the `arm64-v8a` variable above, so the app supports every device.
+
+Other release material:
+
+- **Store listing:** the text, keywords and privacy answers are in [`store/listing.md`](store/listing.md).
+- **Screenshots:** in [`store/screenshots/`](store/screenshots).
+- **Public pages:** the privacy policy and support pages are in [`docs/`](docs), published with GitHub Pages. The privacy page is generated from the in-app text with `node scripts/build-policy-page.js`.
 
 ---
 
 ## Project structure
 
 ```
-App.tsx, index.ts                 App root; Android widget task registration
-app.json, eas.json                Expo and EAS configuration
+App.tsx, index.ts            App entry point; registers the Android widget handler
+app.json, eas.json           Expo and EAS configuration
 src/
-  screens/                        Home, Prayer times & Qibla, Adhkar library, Misbaha, Stats, Settings, About…
-  components/                     Decorative ornaments, animated misbaha counter, share cards, backgrounds
-  data/                           Adhkar, Dahri prayer-time table, verses, hadiths, Names of Allah
-  services/
-    notificationService.ts        Day-by-day notification scheduling
-    PrayerTimesProvider.ts        Resolves the saved location and computes times for any day (widgets, notifications)
-  utils/
-    prayerTimesEngine.ts          Dahri table vs. astronomical calculation, per-country method
-    …                             Prayer status, formatters (Hijri dates), rating, stats
-  theme/                          Colours, styles, background option switch
-  widgets/
-    masraPalace/                  Android widgets (design, model, Dahri time provider, controller)
-    ios/IosWidgetBridge.ts        Sends 14 days of prayer times to the iPhone widget
-modules/masra-widget-clock/       Local Expo module (Kotlin): exact per-minute Android widget refresh
-targets/widget/                   iPhone WidgetKit extension (SwiftUI), linked by @bacons/apple-targets
-scripts/gold-palette.js           Switch the app's gold colour and restore the saved one
-assets/                           Icons, splash, fonts (incl. widget fonts)
+  screens/                   Home, Prayer Times & Qibla, Adhkar, Misbaha, Statistics, Settings, About
+  components/                Ornaments and backgrounds, the animated misbaha, shareable cards
+  data/                      Adhkar, the Dahri timetable, verses, hadiths, Names of Allah
+  services/                  Notification scheduling and the background prayer-times provider
+  utils/                     Prayer-times engine, prayer status, Hijri dates, rating, statistics
+  theme/                     Colours, styles and the background option
+  widgets/                   Android widgets and the bridge that feeds the iPhone widget
+modules/masra-widget-clock/  Kotlin module: exact per-minute refresh of the Android widgets
+targets/widget/              iPhone widget (SwiftUI / WidgetKit)
+store/                       Store listing text and screenshots
+docs/                        Public privacy policy and support pages
+scripts/                     Helper scripts (privacy page generator, colour switcher)
 ```
-
-### How prayer times are computed
-
-`src/utils/prayerTimesEngine.ts` is the single source of truth used by the screen, both widgets and the notifications:
-
-- **Within ~60 km of a Dahri reference town** (Palestine and its immediate surroundings) the times come from the Dahri table, shifted by the town's offset and converted from Palestine standard time (UTC+2) to the device clock — so summer time, and neighbours on a different clock such as Jordan, are handled automatically.
-- **Everywhere else** they are calculated astronomically with *adhan*, using the method of the user's country (from reverse geocoding; Muslim World League by default) and the recommended high-latitude rule. The screen and share cards then read «حساب فلكي» with the method's name instead of «التقويم الدهري».
-
-### How the widgets get their data
-
-- **Android:** the widgets compute their own times with the same engine for the saved city or last GPS position, so they stay correct with the app closed. The `masra-widget-clock` module redraws them at the start of every minute (exact alarms; falls back to a short window if exact alarms are not allowed).
-- **iPhone:** the app writes 14 days of times into a shared App Group (`group.com.mohamad.masra`); the SwiftUI widget builds a timeline with an entry at every adhan and iqama, and iOS ticks the countdown live.
-
----
-
-## Customisation switches
-
-| What | Where | Options |
-|---|---|---|
-| Screen background | `src/theme/backgroundStyle.ts` | `'classic'`, `'courtyard'` (current), `'girih'` |
-| App gold colour | `node scripts/gold-palette.js` | `apply` (richer gold), `revert` (original `#D4A373`), `status` |
 
 ---
 
 ## Licence
 
-Developed by **Mohamad Jammal**. Copyright © 2026 — **all rights reserved**, see [LICENSE](LICENSE). Third-party libraries remain under their own licences.
+Developed by **Mohamad Jammal**. Copyright © 2026, all rights reserved — see [LICENSE](LICENSE). Third-party libraries remain under their own licences.
