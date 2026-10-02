@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, Switch } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { ThemeContext } from '../theme/ThemeContext';
@@ -6,6 +6,14 @@ import type { ThemeMode } from '../theme/ThemeContext';
 import { heritageDarkTheme, heritageLightTheme } from '../theme/colorThemes';
 import { styles } from '../theme/styles';
 import { ExactImagePatternWall, HeritageArchBanner, useBackgroundScroll } from '../components/Decorative';
+import {
+  DEFAULT_WIDGET_FONT_SIZE,
+  WIDGET_FONT_SIZE_OPTIONS,
+  loadWidgetFontPreference,
+  saveWidgetFontPreference,
+  type WidgetFontPreference,
+} from '../services/appPreferences';
+import { updateHomeScreenWidgets } from '../utils/prayerLogic';
 
 function SettingsScreen({ hapticEnabled, setHapticEnabled, fontSize, setFontSize, navigation }: any) {
   const { isDarkMode, themeMode, setThemeMode } = useContext(ThemeContext);
@@ -13,6 +21,18 @@ function SettingsScreen({ hapticEnabled, setHapticEnabled, fontSize, setFontSize
 
   // Parallax: moves the background pattern with scrolling (background option 'girih')
   const bgScroll = useBackgroundScroll();
+
+  // Widget text size: automatic (follows the app's text size) or a fixed size
+  const [widgetFont, setWidgetFont] = useState<WidgetFontPreference>({ auto: true, size: DEFAULT_WIDGET_FONT_SIZE });
+  useEffect(() => {
+    loadWidgetFontPreference().then(setWidgetFont);
+  }, []);
+
+  const changeWidgetFont = async (pref: WidgetFontPreference) => {
+    setWidgetFont(pref);
+    await saveWidgetFontPreference(pref);
+    updateHomeScreenWidgets();
+  };
 
   return (
     <ExactImagePatternWall isDarkMode={isDarkMode}>
@@ -64,6 +84,32 @@ function SettingsScreen({ hapticEnabled, setHapticEnabled, fontSize, setFontSize
             <TouchableOpacity style={[styles.fontBtn, themeColors.circleBtn, fontSize === 26 && styles.activeFontBtn]} onPress={() => setFontSize(26)}><Text style={[styles.fontBtnText, themeColors.circleText]}>26</Text></TouchableOpacity>
             <TouchableOpacity style={[styles.fontBtn, themeColors.circleBtn, fontSize === 30 && styles.activeFontBtn]} onPress={() => setFontSize(30)}><Text style={[styles.fontBtnText, themeColors.circleText]}>30</Text></TouchableOpacity>
           </View>
+        </View>
+
+        {/* Widget text size: automatic, or a fixed size chosen below */}
+        <View style={[styles.settingRowColumn, themeColors.card]}>
+          <Text style={[styles.settingLabel, themeColors.text, { marginBottom: 10, fontSize: fontSize - 2, textAlign: 'right' }]}>حجم خط الويدجت</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Switch value={widgetFont.auto} onValueChange={(auto) => changeWidgetFont({ ...widgetFont, auto })} />
+            <View style={{ flex: 1, alignItems: 'flex-end', marginLeft: 10 }}>
+              <Text style={[themeColors.text, { fontSize: fontSize - 4, textAlign: 'right' }]}>تلقائي</Text>
+              <Text style={[themeColors.subText, { fontSize: fontSize - 7, textAlign: 'right', marginTop: 2 }]}>حسب حجم نص التطبيق</Text>
+            </View>
+          </View>
+          {!widgetFont.auto && (
+            <View style={[styles.fontButtonsRow, { marginTop: 14 }]}>
+              {WIDGET_FONT_SIZE_OPTIONS.map((size) => (
+                <TouchableOpacity
+                  key={size}
+                  style={[styles.fontBtn, themeColors.circleBtn, widgetFont.size === size && styles.activeFontBtn]}
+                  onPress={() => changeWidgetFont({ auto: false, size })}
+                  accessibilityLabel={`حجم خط الويدجت ${size}`}
+                >
+                  <Text style={[styles.fontBtnText, themeColors.circleText]}>{size}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Privacy policy and terms */}

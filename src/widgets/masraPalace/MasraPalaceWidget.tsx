@@ -301,10 +301,12 @@ function PrayerCell({ prayer, s, layout }: { prayer: PalacePrayerCell; s: number
       {/* Large, bold names and times for easy reading */}
       <TextWidget
         text={prayer.label}
+        maxLines={1}
         style={{ fontFamily: F.label, fontSize: 16 * t * s, color: active ? C.goldBright : C.ivory100, textAlign: 'center' }}
       />
       <TextWidget
         text={prayer.time}
+        maxLines={1}
         style={{ fontFamily: F.label, fontSize: 15 * t * s, color: active ? C.ivory50 : C.ivory200, textAlign: 'center' }}
       />
     </FlexWidget>
