@@ -1,9 +1,9 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
-import { DahriWidgetTimesProvider } from '../widgets/masraPalace/DahriWidgetTimesProvider';
+import { PrayerTimesProvider } from './PrayerTimesProvider';
 
 // ==========================================
-// 🔔 إعدادات الإشعارات
+// Notification handler
 // ==========================================
 
 Notifications.setNotificationHandler({
@@ -17,7 +17,7 @@ Notifications.setNotificationHandler({
 });
 
 // ==========================================
-// 📚 رسائل أذكار الصباح
+// Morning adhkar messages
 // ==========================================
 
 const MORNING_MESSAGES = [
@@ -56,7 +56,7 @@ const MORNING_MESSAGES = [
 ];
 
 // ==========================================
-// 🌙 رسائل أذكار المساء
+// Evening adhkar messages
 // ==========================================
 
 const EVENING_MESSAGES = [
@@ -91,7 +91,7 @@ const EVENING_MESSAGES = [
 ];
 
 // ==========================================
-// 🕌 رسائل وقت الصلاة
+// Prayer time messages
 // ==========================================
 
 const PRAYER_MESSAGES = [
@@ -122,7 +122,7 @@ const PRAYER_MESSAGES = [
 ];
 
 // ==========================================
-// ⏰ رسائل الاستعداد للصلاة
+// Pre-prayer reminders
 // ==========================================
 
 const PRE_PRAYER_MESSAGES = [
@@ -145,7 +145,7 @@ const PRE_PRAYER_MESSAGES = [
 ];
 
 // ==========================================
-// 📿 رسائل بعد الصلاة
+// After-prayer adhkar
 // ==========================================
 
 const POST_PRAYER_MESSAGES = [
@@ -168,7 +168,7 @@ const POST_PRAYER_MESSAGES = [
 ];
 
 // ==========================================
-// 😴 أذكار النوم والوتر
+// Sleep adhkar and witr
 // ==========================================
 
 const SLEEP_MESSAGES = [
@@ -199,7 +199,7 @@ const SLEEP_MESSAGES = [
 ];
 
 // ==========================================
-// ✨ تذكيرات يومية خفيفة
+// Light daily reminders
 // ==========================================
 
 const RANDOM_MESSAGES = [
@@ -254,7 +254,7 @@ const RANDOM_MESSAGES = [
 ];
 
 // ==========================================
-// 🕌 رسائل يوم الجمعة
+// Friday messages
 // ==========================================
 
 const FRIDAY_MORNING_MESSAGES = [
@@ -277,7 +277,7 @@ const FRIDAY_MORNING_MESSAGES = [
 ];
 
 // ==========================================
-// 🤲 ساعة الاستجابة يوم الجمعة
+// Friday's hour of answered prayer
 // ==========================================
 
 const FRIDAY_ISTEJABA_MESSAGES = [
@@ -297,7 +297,7 @@ const FRIDAY_ISTEJABA_MESSAGES = [
 
 
 // ==========================================
-// 🛠️ دوال مساعدة
+// Helpers
 // ==========================================
 
 type Message = { t: string; b: string };
@@ -332,9 +332,8 @@ const parseTimeString = (timeStr: string) => {
 };
 
 /**
- * تاريخ فعلي = يوم معيّن + وقت "HH:MM" + إزاحة بالدقائق. new Date بيعالج
- * تخطّي نص الليل تلقائياً (مثلاً العشاء + ٩٠ دقيقة بيطلع باليوم التالي
- * بدل ما يلفّ على نفس اليوم متل الطريقة القديمة).
+ * Concrete date = day + "HH:MM" + offset in minutes. `new Date` handles
+ * rolling over midnight (e.g. Isha + 90 minutes lands on the next day).
  */
 const atTime = (day: Date, timeStr: string, offsetMinutes = 0): Date => {
   const { hours, minutes } = parseTimeString(timeStr);
@@ -342,7 +341,7 @@ const atTime = (day: Date, timeStr: string, offsetMinutes = 0): Date => {
 };
 
 // ==========================================
-// 📱 قنوات Android
+// Android channels
 // ==========================================
 
 const setupAndroidNotificationChannels = async () => {
@@ -365,18 +364,17 @@ const setupAndroidNotificationChannels = async () => {
 };
 
 // ==========================================
-// 🔔 جدولة جميع إشعارات التطبيق
+// Scheduling
 // ==========================================
 //
-// كل إشعار بينجدول بتاريخ ووقت محدّد لكل يوم (مش "يومياً بنفس الساعة")،
-// محسوب من مواقيت التقويم الدهري لذلك اليوم بالذات — لأنه مواقيت الصلاة
-// بتتحرّك تقريباً دقيقة كل يوم، والإشعار اليومي المتكرر كان بيبعد عن وقت
-// الصلاة الحقيقي كل ما طوّل المستخدم بدون ما يفتح شاشة المواقيت.
+// Every notification is scheduled for an exact date and time per day (not a
+// daily repeating trigger), computed from that day's prayer times — prayer
+// times shift by about a minute a day, so a repeating trigger drifts away
+// from the real time the longer the app stays closed.
 //
-// عدد الأيام محكوم بحدّ iOS: ٦٤ إشعار مجدول كحد أقصى للتطبيق، وعنا ١١
-// إشعار باليوم (+٢ يوم الجمعة) → ٥ أيام = ٥٥ + ٢ = ٥٧. أندرويد ما عنده
-// هالحد فمنجدول أسبوعين. ومع كل فتحة للتطبيق بتنعاد الجدولة من جديد،
-// فالنافذة بتضل ماشية لقدّام.
+// The window is limited by iOS's cap of 64 pending notifications: 11 a day
+// (+2 on Fridays) → 5 days = 55 + 2 = 57. Android has no cap, so it gets two
+// weeks. Every app launch reschedules, so the window keeps moving forward.
 
 const DAYS_AHEAD = Platform.OS === 'ios' ? 5 : 14;
 
@@ -387,7 +385,7 @@ type PlannedNotification = {
   body: string;
 };
 
-/** كل إشعارات يوم واحد (بدون فلترة الماضي) */
+/** All notifications for one day (past ones are filtered later). */
 const planDay = (day: Date, timings: DayTimings): PlannedNotification[] => {
   const planned: PlannedNotification[] = [];
   const add = (date: Date, channelId: PlannedNotification['channelId'], msg: Message, prayerName?: string) => {
@@ -395,13 +393,13 @@ const planDay = (day: Date, timings: DayTimings): PlannedNotification[] => {
     planned.push({ date, channelId, title: fill(msg.t), body: fill(msg.b) });
   };
 
-  // 🌅 1. أذكار الصباح — الفجر + 20 دقيقة
+  // 1. Morning adhkar — Fajr + 20 min
   add(atTime(day, timings.Fajr, 20), 'adhkar', getRandomMsg(MORNING_MESSAGES));
 
-  // 🌙 2. أذكار المساء — المغرب - 20 دقيقة
+  // 2. Evening adhkar — Maghrib − 20 min
   add(atTime(day, timings.Maghrib, -20), 'adhkar', getRandomMsg(EVENING_MESSAGES));
 
-  // 🕌 3. إشعار وقت كل صلاة
+  // 3. Each prayer time
   const prayers = [
     { name: 'الفجر', time: timings.Fajr },
     { name: 'الظهر', time: timings.Dhuhr },
@@ -413,24 +411,24 @@ const planDay = (day: Date, timings: DayTimings): PlannedNotification[] => {
     add(atTime(day, prayer.time), 'prayers', getRandomMsg(PRAYER_MESSAGES), prayer.name);
   }
 
-  // ⏰ 4. تذكير استعداد واحد فقط في اليوم — الظهر - 15 دقيقة
+  // 4. One preparation reminder a day — Dhuhr − 15 min
   add(atTime(day, timings.Dhuhr, -15), 'adhkar', getRandomMsg(PRE_PRAYER_MESSAGES));
 
-  // 📿 5. أذكار بعد العشاء — بعد العشاء بـ 15 دقيقة
-  // (بدلاً من إشعار بعد كل صلاة، نكتفي بإشعار واحد حتى لا يصبح التطبيق مزعجًا)
+  // 5. After-prayer adhkar once a day — Isha + 15 min (not after every
+  //    prayer, to keep notifications from becoming noisy)
   add(atTime(day, timings.Isha, 15), 'adhkar', getRandomMsg(POST_PRAYER_MESSAGES), 'العشاء');
 
-  // 😴 6. أذكار النوم والوتر — بعد العشاء بـ 90 دقيقة
+  // 6. Sleep adhkar and witr — Isha + 90 min
   add(atTime(day, timings.Isha, 90), 'adhkar', getRandomMsg(SLEEP_MESSAGES));
 
-  // ✨ 7. تذكير يومي عشوائي — بعد الشروق بـ 3 ساعات (حتى لا يتداخل مع أذكار الصباح)
+  // 7. Random daily reminder — Sunrise + 3 h (clear of the morning adhkar)
   add(atTime(day, timings.Sunrise, 180), 'adhkar', getRandomMsg(RANDOM_MESSAGES));
 
-  // الجمعة (getDay() === 5)
+  // Friday (getDay() === 5)
   if (day.getDay() === 5) {
-    // 🕌 8. إشعار الجمعة — الساعة 9:30 صباحًا
+    // 8. Friday morning — 9:30
     add(atTime(day, '09:30'), 'adhkar', getRandomMsg(FRIDAY_MORNING_MESSAGES));
-    // 🤲 9. الجمعة — قبل المغرب بـ 45 دقيقة
+    // 9. Friday — 45 min before Maghrib
     add(atTime(day, timings.Maghrib, -45), 'adhkar', getRandomMsg(FRIDAY_ISTEJABA_MESSAGES));
   }
 
@@ -440,7 +438,7 @@ const planDay = (day: Date, timings: DayTimings): PlannedNotification[] => {
 const runScheduling = async (todayTimings?: DayTimings | null) => {
   await setupAndroidNotificationChannels();
 
-  // حذف الجدولة القديمة قبل إنشاء الجدولة الجديدة
+  // Clear the previous schedule before creating the new one
   await Notifications.cancelAllScheduledNotificationsAsync();
 
   const { status } = await Notifications.getPermissionsAsync();
@@ -448,16 +446,15 @@ const runScheduling = async (todayTimings?: DayTimings | null) => {
     return;
   }
 
-  // نفس مزوّد المواقيت تبع الويدجتس: المدينة المحفوظة + الإزاحة الدهرية +
-  // التوقيت الصيفي. المواقيت الممرّرة (من شاشة المواقيت) بتُستخدم لتحديد
-  // المدينة إذا ما في مدينة محفوظة (GPS بدون حفظ).
-  const provider = await DahriWidgetTimesProvider.load(todayTimings);
+  // Same provider as the widgets (saved city or last GPS fix). Times passed
+  // in from the Prayer Times screen are used for today, as shown to the user.
+  const provider = await PrayerTimesProvider.load(todayTimings);
   const now = new Date();
 
   const planned: PlannedNotification[] = [];
   for (let i = 0; i < DAYS_AHEAD; i++) {
     const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, 12);
-    // اليوم: المواقيت الممرّرة من الشاشة إن وجدت (هي نفسها المعروضة للمستخدم)
+    // Today: the times passed from the screen, if any
     const timings = i === 0 && todayTimings ? todayTimings : provider.getTimingsFor(day);
     planned.push(...planDay(day, timings));
   }
@@ -482,8 +479,8 @@ const runScheduling = async (todayTimings?: DayTimings | null) => {
   }
 };
 
-// استدعاءات متداخلة (فتح التطبيق + شاشة المواقيت بنفس اللحظة) بتنفّذ ورا
-// بعض، حتى ما تتداخل cancelAll مع جدولة التانية وتطلع إشعارات مكررة.
+// Overlapping calls (app launch + Prayer Times screen at the same moment) run
+// one after another, so cancelAll never races another schedule and creates duplicates.
 let schedulingQueue: Promise<void> = Promise.resolve();
 
 const enqueueScheduling = (todayTimings?: DayTimings | null): Promise<void> => {
@@ -495,8 +492,8 @@ const enqueueScheduling = (todayTimings?: DayTimings | null): Promise<void> => {
   return schedulingQueue;
 };
 
-/** من شاشة المواقيت — مع مواقيت اليوم المحسوبة والمعروضة للمستخدم */
+/** From the Prayer Times screen, with today's times as shown to the user. */
 export const scheduleAppNotifications = (timings: DayTimings) => enqueueScheduling(timings);
 
-/** مع كل فتحة للتطبيق — بيمدّ نافذة الإشعارات لقدّام من المدينة المحفوظة */
+/** On every app launch: extends the notification window from the saved location. */
 export const refreshAppNotifications = () => enqueueScheduling(null);

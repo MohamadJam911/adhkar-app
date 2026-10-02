@@ -1,18 +1,18 @@
 import { Platform } from 'react-native';
 import type { ExtensionStorage as ExtensionStorageType } from '@bacons/apple-targets';
 import type { PrayerTimings } from '../widgetStatus';
-import { DahriWidgetTimesProvider } from '../masraPalace/DahriWidgetTimesProvider';
+import { PrayerTimesProvider } from '../../services/PrayerTimesProvider';
 import { MasraPalaceWidgetModel } from '../masraPalace/MasraPalaceWidgetModel';
 
 // ==========================================
-// 🍎 جسر ويدجت الآيفون (WidgetKit — targets/widget بـSwift)
+// iPhone widget bridge (WidgetKit — Swift in targets/widget)
 // ==========================================
-// ويدجت الآيفون ما بيقدر يشغّل JS، فالتطبيق بيحسب مواقيت ١٤ يوم قدّام من
-// جدول DAHRI_TIMES (نفس DahriWidgetTimesProvider تبع أندرويد بالحرف —
-// نفس المدينة والإزاحة والتوقيت الصيفي) وبيكتبها كـJSON بمخزن الـApp Group
-// المشترك، والويدجت بيبني منها جدولاً زمنياً (timeline) لحاله: بيتبدّل
-// للصلاة الجاية بلحظة الأذان بالضبط وعدّاده بيتكّ بالثواني — بدون ما
-// التطبيق يكون مفتوح. لازم يتطابق مع:
+// The iPhone widget cannot run JavaScript, so the app computes 14 days of
+// prayer times with PrayerTimesProvider (same location and engine as the
+// Android widgets) and writes them as JSON to the shared App Group. The
+// widget builds its own timeline from them: it switches to the next prayer
+// exactly at the adhan and its countdown ticks every second — without the
+// app running. Must match:
 //   • app.json ← ios.entitlements["com.apple.security.application-groups"]
 //   • targets/widget/MasraWidget.swift ← appGroup / storageKey / widgetKind
 
@@ -35,8 +35,8 @@ export type IosWidgetPayload = {
 const dayKey = (date: Date): string =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-// المكتبة بتقرا المتغيّر العام `expo` لحظة استيرادها — منحمّلها بس على iOS
-// ووقت الحاجة، حتى ما تنلمس أبداً على أندرويد (ولا بمهمة الويدجت الخلفية).
+// The library reads the global `expo` at import time, so it is loaded lazily
+// and only on iOS — never on Android or in the background widget task.
 const loadExtensionStorage = (): typeof ExtensionStorageType =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   require('@bacons/apple-targets').ExtensionStorage;
@@ -44,9 +44,9 @@ const loadExtensionStorage = (): typeof ExtensionStorageType =>
 export class IosWidgetBridge {
   private static storage: ExtensionStorageType | null = null;
 
-  /** بيبني بيانات الويدجت (بدون كتابة) — مفصول حتى ينفحص بسهولة. */
+  /** Builds the widget payload without writing it — separate so it is easy to test. */
   static async buildPayload(lastKnownTimings?: PrayerTimings | null, now: Date = new Date()): Promise<IosWidgetPayload> {
-    const provider = await DahriWidgetTimesProvider.load(lastKnownTimings);
+    const provider = await PrayerTimesProvider.load(lastKnownTimings);
     const days: IosWidgetDay[] = [];
     for (let i = 0; i < DAYS_AHEAD; i++) {
       const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, 12);
@@ -63,13 +63,13 @@ export class IosWidgetBridge {
   }
 
   /**
-   * بيكتب مواقيت ١٤ يوم للويدجت وبيطلب من iOS يعيد بناء جدوله الزمني.
-   * آمن للاستدعاء على أندرويد (ما بيعمل شي) وعلى نسخة iOS ما فيها الموديول.
+   * Writes 14 days of times for the widget and asks iOS to rebuild its timeline.
+   * Safe to call on Android (no-op) and on iOS builds without the module.
    */
   static async sync(lastKnownTimings?: PrayerTimings | null): Promise<void> {
     if (Platform.OS !== 'ios') return;
     try {
-      if (lastKnownTimings) await DahriWidgetTimesProvider.rememberAppTimings(lastKnownTimings);
+      if (lastKnownTimings) await PrayerTimesProvider.rememberAppTimings(lastKnownTimings);
       const payload = await IosWidgetBridge.buildPayload(lastKnownTimings);
       const ExtensionStorage = loadExtensionStorage();
       IosWidgetBridge.storage ??= new ExtensionStorage(IOS_APP_GROUP);

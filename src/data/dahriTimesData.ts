@@ -1,5 +1,5 @@
 export const PALESTINE_CITIES = [
-  { name: '📍 الموقع الحالي (GPS مباشر - التوقيت الدهري)', lat: null, lon: null, dahriOffset: 0 },
+  { name: '📍 موقعي الحالي (GPS)', lat: null, lon: null, dahriOffset: 0 },
   { name: 'القدس الشريف (توقيت الأقصى)', lat: 31.7683, lon: 35.2137, dahriOffset: 0 },
   { name: 'رام الله والبيرة', lat: 31.9038, lon: 35.2034, dahriOffset: 0 },
   { name: 'بيت لحم', lat: 31.7054, lon: 35.2024, dahriOffset: 0 },
@@ -28,7 +28,7 @@ export const PALESTINE_CITIES = [
 ];
 
 export const DAHRI_TIMES: string[][][] = [
-  // 1. كانون الثاني
+  // 1. January
   [
     ["05:12", "06:36", "11:42", "02:27", "04:52", "06:13"],
     ["05:12", "06:36", "11:43", "02:28", "04:53", "06:13"],
@@ -62,7 +62,7 @@ export const DAHRI_TIMES: string[][][] = [
     ["05:10", "06:31", "11:52", "02:49", "05:17", "06:34"],
     ["05:09", "06:31", "11:52", "02:50", "05:18", "06:35"],
   ],
-  // 2. شباط
+  // 2. February
   [
     ["05:09", "06:30", "11:52", "02:51", "05:18", "06:36"],
     ["05:08", "06:29", "11:52", "02:52", "05:19", "06:36"],
@@ -94,7 +94,7 @@ export const DAHRI_TIMES: string[][][] = [
     ["04:46", "06:05", "11:51", "03:07", "05:41", "06:56"],
     ["04:46", "06:05", "11:51", "03:07", "05:42", "06:56"],
   ],
-  // 3. آذار
+  // 3. March
   [
     ["04:44", "06:03", "11:51", "03:08", "05:43", "06:58"],
     ["04:43", "06:02", "11:51", "03:08", "05:44", "06:58"],
@@ -128,7 +128,7 @@ export const DAHRI_TIMES: string[][][] = [
     ["04:06", "05:27", "11:43", "03:15", "06:04", "07:20"],
     ["04:05", "05:25", "11:43", "03:15", "06:05", "07:21"],
   ],
-  // 4. نيسان
+  // 4. April
   [
     ["04:03", "05:24", "11:43", "03:15", "06:05", "07:22"],
     ["04:02", "05:23", "11:42", "03:15", "06:06", "07:23"],
@@ -161,7 +161,7 @@ export const DAHRI_TIMES: string[][][] = [
     ["03:25", "04:51", "11:36", "03:15", "06:25", "07:47"],
     ["03:24", "04:50", "11:36", "03:15", "06:25", "07:48"],
   ],
-  // 5. أيار
+  // 5. May
   [
     ["03:22", "04:50", "11:36", "03:15", "06:26", "07:49"],
     ["03:21", "04:49", "11:36", "03:15", "06:27", "07:50"],
@@ -195,7 +195,7 @@ export const DAHRI_TIMES: string[][][] = [
     ["02:57", "04:31", "11:36", "03:16", "06:45", "08:15"],
     ["02:56", "04:31", "11:36", "03:17", "06:45", "08:16"],
   ],
-  // 6. حزيران
+  // 6. June
   [
     ["02:56", "04:31", "11:36", "03:17", "06:46", "08:17"],
     ["02:55", "04:31", "11:37", "03:17", "06:46", "08:18"],
@@ -228,7 +228,7 @@ export const DAHRI_TIMES: string[][][] = [
     ["02:57", "04:33", "11:42", "03:22", "06:54", "08:27"],
     ["02:57", "04:34", "11:42", "03:22", "06:54", "08:27"],
   ],
-  // 7. تموز
+  // 7. July
   [
     ["02:58", "04:34", "11:42", "03:23", "06:54", "08:27"],
     ["02:58", "04:35", "11:43", "03:23", "06:54", "08:27"],
@@ -262,7 +262,7 @@ export const DAHRI_TIMES: string[][][] = [
     ["03:20", "04:50", "11:45", "03:25", "06:44", "08:10"],
     ["03:21", "04:51", "11:45", "03:25", "06:43", "08:09"],
   ],
-  // 8. آب
+  // 8. August
   [
     ["03:22", "04:52", "11:45", "03:25", "06:42", "08:08"],
     ["03:23", "04:52", "11:45", "03:25", "06:41", "08:07"],
@@ -296,7 +296,7 @@ export const DAHRI_TIMES: string[][][] = [
     ["03:48", "05:11", "11:39", "03:15", "06:12", "07:31"],
     ["03:49", "05:11", "11:39", "03:15", "06:11", "07:29"],
   ],
-  // 9. أيلول
+  // 9. September
   [
     ["03:50", "05:12", "11:39", "03:14", "06:10", "07:28"],
     ["03:51", "05:12", "11:38", "03:14", "06:08", "07:26"],
@@ -329,7 +329,7 @@ export const DAHRI_TIMES: string[][][] = [
     ["04:11", "05:30", "11:29", "02:53", "05:33", "06:47"],
     ["04:12", "05:30", "11:29", "02:52", "05:32", "06:46"],
   ],
-  // 10. تشرين الأول
+  // 10. October
   [
     ["04:12", "05:31", "11:28", "02:51", "05:30", "06:45"],
     ["04:13", "05:32", "11:28", "02:50", "05:29", "06:43"],
@@ -363,7 +363,7 @@ export const DAHRI_TIMES: string[][][] = [
     ["04:32", "05:52", "11:22", "02:27", "04:57", "06:13"],
     ["04:32", "05:53", "11:22", "02:27", "04:56", "06:12"],
   ],
-  // 11. تشرين الثاني
+  // 11. November
   [
     ["04:33", "05:53", "11:22", "02:26", "04:55", "06:11"],
     ["04:34", "05:54", "11:22", "02:25", "04:54", "06:11"],
@@ -396,7 +396,7 @@ export const DAHRI_TIMES: string[][][] = [
     ["04:53", "06:17", "11:27", "02:16", "04:41", "06:01"],
     ["04:54", "06:17", "11:27", "02:16", "04:41", "06:01"],
   ],
-  // 12. كانون الأول
+  // 12. December
   [
     ["04:55", "06:18", "11:28", "02:16", "04:41", "06:01"],
     ["04:55", "06:19", "11:28", "02:16", "04:41", "06:01"],
@@ -433,38 +433,45 @@ export const DAHRI_TIMES: string[][][] = [
 ];
 
 const DAHRI_REFERENCE_LOCATIONS = [
-  { lat: 31.7683, lon: 35.2137, offset: 0 },   // القدس
-  { lat: 31.9038, lon: 35.2034, offset: 0 },   // رام الله والبيرة
-  { lat: 31.7054, lon: 35.2024, offset: 0 },   // بيت لحم
-  { lat: 32.4622, lon: 35.2954, offset: 0 },   // جنين
-  { lat: 32.2211, lon: 35.2544, offset: 0 },   // نابلس
-  { lat: 32.7019, lon: 35.2978, offset: 0 },   // الناصرة
-  { lat: 32.5197, lon: 35.1517, offset: 0 },   // أم الفحم
-  { lat: 31.8661, lon: 35.4542, offset: -1 },  // أريحا
-  { lat: 32.7950, lon: 35.5320, offset: -1 },  // طبرية
-  { lat: 32.9640, lon: 35.4960, offset: -1 },  // صفد
-  { lat: 32.4970, lon: 35.4970, offset: -1 },  // بيسان
-  { lat: 31.5326, lon: 35.0998, offset: 1 },   // الخليل
-  { lat: 31.5590, lon: 35.0180, offset: 1 },   // إذنا
-  { lat: 31.5052, lon: 35.0270, offset: 1 },   // دورا
-  { lat: 31.5222, lon: 34.9835, offset: 1 },   // بيت عوا
-  { lat: 32.7940, lon: 34.9896, offset: 1 },   // حيفا
-  { lat: 32.9295, lon: 35.0821, offset: 1 },   // عكا
-  { lat: 32.3159, lon: 35.0294, offset: 1 },   // طولكرم
-  { lat: 32.1140, lon: 34.9760, offset: 1 },   // كفر قاسم
-  { lat: 32.2658, lon: 35.0111, offset: 1 },   // الطيبة
-  { lat: 31.9514, lon: 34.8885, offset: 1.5 }, // اللد
-  { lat: 31.9295, lon: 34.8658, offset: 1.5 }, // الرملة
-  { lat: 32.1891, lon: 34.9701, offset: 1.5 }, // قلقيلية
-  { lat: 31.2529, lon: 34.7915, offset: 2 },   // بئر السبع
-  { lat: 32.0523, lon: 34.7500, offset: 2 },   // يافا
-  { lat: 31.5016, lon: 34.4668, offset: 3 },   // غزة
-  { lat: 31.2969, lon: 34.2432, offset: 4 },   // رفح
-  { lat: 31.3462, lon: 34.3062, offset: 4 },   // خانيونس
-  { lat: 31.4170, lon: 34.3650, offset: 4 },   // دير البلح
+  { lat: 31.7683, lon: 35.2137, offset: 0 },  // Jerusalem
+  { lat: 31.9038, lon: 35.2034, offset: 0 },  // Ramallah & al-Bireh
+  { lat: 31.7054, lon: 35.2024, offset: 0 },  // Bethlehem
+  { lat: 32.4622, lon: 35.2954, offset: 0 },  // Jenin
+  { lat: 32.2211, lon: 35.2544, offset: 0 },  // Nablus
+  { lat: 32.7019, lon: 35.2978, offset: 0 },  // Nazareth
+  { lat: 32.5197, lon: 35.1517, offset: 0 },  // Umm al-Fahm
+  { lat: 31.8661, lon: 35.4542, offset: -1 },  // Jericho
+  { lat: 32.7950, lon: 35.5320, offset: -1 },  // Tiberias
+  { lat: 32.9640, lon: 35.4960, offset: -1 },  // Safed
+  { lat: 32.4970, lon: 35.4970, offset: -1 },  // Beisan
+  { lat: 31.5326, lon: 35.0998, offset: 1 },  // Hebron
+  { lat: 31.5590, lon: 35.0180, offset: 1 },  // Idhna
+  { lat: 31.5052, lon: 35.0270, offset: 1 },  // Dura
+  { lat: 31.5222, lon: 34.9835, offset: 1 },  // Beit Awwa
+  { lat: 32.7940, lon: 34.9896, offset: 1 },  // Haifa
+  { lat: 32.9295, lon: 35.0821, offset: 1 },  // Acre
+  { lat: 32.3159, lon: 35.0294, offset: 1 },  // Tulkarm
+  { lat: 32.1140, lon: 34.9760, offset: 1 },  // Kafr Qasim
+  { lat: 32.2658, lon: 35.0111, offset: 1 },  // Tayibe
+  { lat: 31.9514, lon: 34.8885, offset: 1.5 },  // Lydd
+  { lat: 31.9295, lon: 34.8658, offset: 1.5 },  // Ramla
+  { lat: 32.1891, lon: 34.9701, offset: 1.5 },  // Qalqilya
+  { lat: 31.2529, lon: 34.7915, offset: 2 },  // Beersheba
+  { lat: 32.0523, lon: 34.7500, offset: 2 },  // Jaffa
+  { lat: 31.5016, lon: 34.4668, offset: 3 },  // Gaza
+  { lat: 31.2969, lon: 34.2432, offset: 4 },  // Rafah
+  { lat: 31.3462, lon: 34.3062, offset: 4 },  // Khan Younis
+  { lat: 31.4170, lon: 34.3650, offset: 4 },  // Deir al-Balah
 ];
 
-export const getDahriCityOffset = (lat: number, lon: number): number => {
+/** Max distance (in degrees, ~60 km) from a reference town for the Dahri table to apply. */
+const DAHRI_ZONE_RADIUS_DEG = 0.6;
+
+/**
+ * Minute offset of the nearest Dahri reference town, or `null` when the
+ * location is outside the area the Dahri calendar covers.
+ */
+export const findDahriOffset = (lat: number, lon: number): number | null => {
   let nearestOffset = 0;
   let nearestDistance = Infinity;
 
@@ -475,31 +482,27 @@ export const getDahriCityOffset = (lat: number, lon: number): number => {
       nearestOffset = place.offset;
     }
   }
-  return nearestDistance <= 0.6 ? nearestOffset : 0;
+  return nearestDistance <= DAHRI_ZONE_RADIUS_DEG ? nearestOffset : null;
 };
 
+/** Like `findDahriOffset`, but falls back to Jerusalem (0) outside the zone. */
+export const getDahriCityOffset = (lat: number, lon: number): number => findDahriOffset(lat, lon) ?? 0;
+
+/** The Dahri table is written in Palestine standard time (UTC+2). */
+const DAHRI_TABLE_UTC_OFFSET_MINUTES = 120;
+
 /**
- * دالة تعتمد على سحب إزاحة الوقت مباشرة من ساعة الهاتف (getTimezoneOffset)
- * لتحديد التوقيت الصيفي أو الشتوي تلقائياً ودون تعقيد.
+ * Minutes to add to a Dahri table time to get the device's clock time on
+ * `date`: +60 in Palestinian summer time, 0 in winter, and the right shift
+ * for nearby places on a different clock (e.g. Jordan, UTC+3 all year).
  */
-export const getPalestineDstOffset = (date: Date = new Date()): number => {
-  try {
-    // جلب الفرق بالدقائق بين توقيت الجهاز المحلي وتوقيت UTC مع عكس الإشارة
-    const tzOffsetMinutes = -date.getTimezoneOffset();
-    
-    // إذا كان الهاتف مضبوطاً على التوقيت الصيفي (GMT+3)، فالإزاحة تكون 180 دقيقة أو أكثر
-    if (tzOffsetMinutes >= 180) {
-      return 60; // إضافة ساعة التوقيت الصيفي
-    }
-  } catch (e) {}
-  
-  return 0; // التوقيت الشتوي القياسي
-};
+export const getDahriClockShift = (date: Date = new Date()): number =>
+  -date.getTimezoneOffset() - DAHRI_TABLE_UTC_OFFSET_MINUTES;
 
 export const addMinutesToTime = (time: string, minutes: number, isPM: boolean = false): string => {
   let [hours, mins] = time.split(':').map(Number);
   
-  // إذا كانت الصلاة مسائية (عصر، مغرب، عشاء) وساعتها مسجلة بأقل من 12، نحولها لنظام 24 ساعة
+  // Asr, Maghrib and Isha are stored in 12-hour form; convert them to 24-hour
   if (isPM && hours < 12) {
     hours += 12;
   }

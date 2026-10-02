@@ -21,10 +21,10 @@ function MainTabs({ hapticEnabled, fontSize, setHapticEnabled, setFontSize }: an
       screenOptions={({ navigation }: any) => ({
         headerStyle: { backgroundColor: isDarkMode ? '#1E1B18' : '#FBF9F5' },
         headerTintColor: isDarkMode ? '#D4A373' : '#6F4E37',
-        // العنوان بالنص حتى ما يتصادم مع أيقونة الإعدادات يسار (أندرويد
-        // افتراضياً بيحط العنوان يسار)
+        // Centred title so it never collides with the settings icon on the left
+        // (Android left-aligns titles by default)
         headerTitleAlign: 'center',
-        // الإعدادات يسار الشريط
+        // Settings on the left of the header
         headerLeft: () => (
           <TouchableOpacity
             onPress={() => navigation.navigate('الإعدادات')}
@@ -36,7 +36,7 @@ function MainTabs({ hapticEnabled, fontSize, setHapticEnabled, setFontSize }: an
             <HeritageIcons.Gear size={22} color={isDarkMode ? '#D4A373' : '#6F4E37'} />
           </TouchableOpacity>
         ),
-        // الإحصائيات يمين الشريط
+        // Statistics on the right of the header
         headerRight: () => (
           <TouchableOpacity
             onPress={() => navigation.navigate('StatsScreen')}
@@ -67,8 +67,8 @@ function MainTabs({ hapticEnabled, fontSize, setHapticEnabled, setFontSize }: an
         },
         tabBarActiveTintColor: '#D4A373',
         tabBarInactiveTintColor: isDarkMode ? '#8C7A6B' : '#8C7A6B',
-        // خلفية منطقة الشاشة بين التابات — تفادي أي ومضة رمادية افتراضية
-        // (نفس سبب التعديل على screenBgColor فوق بالـ App()).
+        // Scene background between tabs — avoids the default grey flash
+        // (same reason as the navigation theme background in App).
         sceneContainerStyle: { backgroundColor: isDarkMode ? '#14110E' : '#F9F4EC' },
       })}
     >

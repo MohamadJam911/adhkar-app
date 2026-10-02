@@ -3,32 +3,32 @@ import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Defs, Pattern, Path, Rect } from 'react-native-svg';
 import Animated, { makeMutable, useAnimatedScrollHandler, useAnimatedStyle, useReducedMotion } from 'react-native-reanimated';
-import { DahriWidgetTimesProvider } from '../widgets/masraPalace/DahriWidgetTimesProvider';
+import { PrayerTimesProvider } from '../services/PrayerTimesProvider';
 import type { PrayerTimings } from '../widgets/widgetStatus';
 import { styles } from '../theme/styles';
 
 // ==========================================
-// ✴️ خلفية الخيار ٣ — نقش گره بنجمة ثمانية (خاتم سليمان)
+// Background option 'girih' — eight-point star (Seal of Solomon) pattern
 // ==========================================
-//  ١. شفافية خفيفة جداً: ٤.٥٪ بالفاتح، ٧٪ بالداكن — بتنحسّ أكتر ما بتنشاف
-//  ٢. نجمة ثمانية (مربعين متداخلين) مع مثمّن بالقلب، ونجوم بزوايا البلاطة
-//     موصولة بخطوط بتكوّن صلبان بينها — نمط گره بسيط وأصيل
-//  ٣. تلاشي: النقش أوضح فوق حوالين شريط البسملة وبيختفي لتحت، فمنطقة القراءة نظيفة
-//  ٤. بلاطة كبيرة (72) بخطوط قليلة، وكل الخطوط ≥1pt حتى ما يصير تموّج (moiré)
-//  ٥. بيج أغمق درجة مع بطاقات بيضا وظل ناعم جداً (colorThemes.ts)
-//  ٦. لون خفيف بيتبع وقت الصلاة الحقيقي (المواقيت الدهرية): دفء بالفجر
-//     والمغرب، بنفسجي هادي بعد المغرب، أبرد بالليل، ومحايد بالنهار
-//  ٧. parallax: النقش بيتحرّك أبطأ من البطاقات (٣٠٪) — وبينلغى مع "تقليل الحركة"
+//  1. very low opacity: 4.5% in light mode, 7% in dark — felt more than seen
+//  2. eight-point star (two overlapping squares) with an octagon centre, and
+//     corner stars joined by lines that form crosses — a simple, authentic girih
+//  3. fade: clearer at the top around the Basmala banner, gone further down
+//  4. a large tile (72) with few lines, all ≥1pt to avoid moiré
+//  5. a slightly darker beige with white cards and a very soft shadow (colorThemes.ts)
+//  6. a light tint following the real prayer times: warm at Fajr and
+//     Maghrib, calm violet after Maghrib, cooler at night, neutral by day
+//  7. parallax: the pattern scrolls at 30% of the cards' speed (off with Reduce Motion)
 // ==========================================
 
 const TILE = 72;
 const PARALLAX = 0.3;
 
-// آخر موقع تمرير للشاشة الحالية — كل شاشة بتكتب فيه (useBackgroundScroll)،
-// والخلفية بتقرا منه. البلاطة بتتكرّر كل 72 فالإزاحة بتلفّ بدون فراغات.
+// Latest scroll offset of the current screen — written by useBackgroundScroll and
+// read by the background. The tile repeats every 72, so the offset wraps seamlessly.
 const backgroundScrollY = makeMutable(0);
 
-/** onScroll لـAnimated.ScrollView (reanimated) — بيحرّك نقش الخلفية بالـparallax */
+/** onScroll for a reanimated Animated.ScrollView — moves the background pattern (parallax) */
 export function useBackgroundScroll() {
   return useAnimatedScrollHandler({
     onScroll: (e) => {
@@ -37,7 +37,7 @@ export function useBackgroundScroll() {
   });
 }
 
-// ----- البلاطة -----
+// ----- Tile -----
 const star = (cx: number, cy: number, R: number) => {
   const d = R * Math.SQRT1_2;
   const diamond = `M${cx + R} ${cy}L${cx} ${cy + R}L${cx - R} ${cy}L${cx} ${cy - R}Z`;
@@ -58,12 +58,12 @@ const TILE_PATH = [
   star(TILE, 0, R),
   star(0, TILE, R),
   star(TILE, TILE, R),
-  // خطوط الوصل (بتكوّن صلبان بين النجوم)
+  // Connecting lines (forming crosses between the stars)
   `M${h + R} ${h}H${TILE}M0 ${h}H${h - R}M${h} ${h + R}V${TILE}M${h} 0V${h - R}`,
   `M${R} 0H${TILE - R}M${R} ${TILE}H${TILE - R}M0 ${R}V${TILE - R}M${TILE} ${R}V${TILE - R}`,
 ].join('');
 
-// ----- لون وقت الصلاة -----
+// ----- Prayer-time tint -----
 type Phase = 'dawn' | 'day' | 'sunset' | 'dusk' | 'night';
 
 const TINTS: Record<'light' | 'dark', Record<Exclude<Phase, 'day'>, [string, number]>> = {
@@ -89,7 +89,7 @@ const phaseFromTimings = (t: PrayerTimings, now: Date): Phase => {
   return 'night';
 };
 
-// احتياط لو ما في مواقيت محفوظة بعد
+// Fallback when no prayer times are available yet
 const phaseFromClock = (now: Date): Phase => {
   const hr = now.getHours();
   if (hr >= 4 && hr < 7) return 'dawn';
@@ -99,7 +99,7 @@ const phaseFromClock = (now: Date): Phase => {
   return 'night';
 };
 
-// كاش مشترك بين الشاشات (كل شاشة إلها خلفيتها)، لكل يوم مرة وحدة
+// Cache shared by all screens (each has its own background), refreshed once a day
 let cachedDay = '';
 let cachedTimings: PrayerTimings | null = null;
 
@@ -113,7 +113,7 @@ function usePrayerPhase(): Phase {
       const day = now.toDateString();
       if (cachedDay !== day) {
         try {
-          const provider = await DahriWidgetTimesProvider.load();
+          const provider = await PrayerTimesProvider.load();
           cachedTimings = provider.getTimingsFor(now);
           cachedDay = day;
         } catch {
@@ -133,14 +133,14 @@ function usePrayerPhase(): Phase {
   return phase;
 }
 
-// ----- الخلفية -----
+// ----- Background -----
 const GirihWall = ({ isDarkMode, children }: { isDarkMode: boolean; children: React.ReactNode }) => {
   const { height: H } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
   const phase = usePrayerPhase();
 
   const base = isDarkMode ? (['#201B16', '#14110E', '#0B0907'] as const) : (['#F3EBDD', '#EBE0CE', '#DFD0B8'] as const);
-  // نفس ألوان الخلفية بشفافية متزايدة — بتغطّي النقش تدريجياً لتحت
+  // Background colours with increasing opacity — gradually covering the pattern downwards
   const fade = isDarkMode
     ? (['rgba(32,27,22,0)', 'rgba(20,17,14,0.55)', 'rgba(11,9,7,0.97)'] as const)
     : (['rgba(243,235,221,0)', 'rgba(235,224,206,0.55)', 'rgba(223,208,184,0.97)'] as const);
@@ -156,7 +156,7 @@ const GirihWall = ({ isDarkMode, children }: { isDarkMode: boolean; children: Re
 
   return (
     <LinearGradient colors={base} style={styles.canvasContainer}>
-      {/* النقش (بيتحرّك بالـparallax) */}
+      {/* Pattern (moves with parallax) */}
       <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 0, left: 0, right: 0, height: H + TILE }, patternStyle]}>
         <Svg width="100%" height="100%">
           <Defs>
@@ -168,10 +168,10 @@ const GirihWall = ({ isDarkMode, children }: { isDarkMode: boolean; children: Re
         </Svg>
       </Animated.View>
 
-      {/* تلاشي النقش لتحت (ثابت) */}
+      {/* Pattern fade-out (fixed) */}
       <LinearGradient pointerEvents="none" colors={fade} locations={[0.12, 0.45, 0.82]} style={StyleSheet.absoluteFill} />
 
-      {/* لون وقت الصلاة من الأعلى */}
+      {/* Prayer-time tint from the top */}
       {tint && (
         <LinearGradient
           pointerEvents="none"

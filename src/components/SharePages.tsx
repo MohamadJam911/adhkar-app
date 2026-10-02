@@ -14,7 +14,7 @@ const extractAyahNumber = (reference: string): string => {
 };
 
 // ==========================================
-// 🖼️ مكونات تصدير البطاقات كصور عالية الدقة (1080px)
+// Off-screen cards exported as high-resolution (1080px) share images
 // ==========================================
 const QuranSharePage = ({ verse, fontsLoaded }: { verse: QuranVerseItem; fontsLoaded: boolean }) => {
   const quranNativeFont = Platform.OS === 'ios' ? 'AmiriQuran-Regular' : 'Amiri Quran';
@@ -151,12 +151,12 @@ const HadithSharePage = ({ hadith }: { hadith: any }) => (
   </View>
 );
 
-const PrayerSharePage = ({ timings, locationName, gregorianDate, hijriDate, duhaTimes, nightInfo }: any) => (
+const PrayerSharePage = ({ timings, locationName, gregorianDate, hijriDate, duhaTimes, nightInfo, title = 'مواقيت الصلاة وفق التقويم الدهري' }: any) => (
   <View style={{ width: 1080, backgroundColor: '#F7F0E3', padding: 50, alignItems: 'center' }}>
     <View style={{ width: '100%', borderWidth: 5, borderColor: '#A47A45', borderRadius: 24, padding: 20 }}>
       <View style={{ borderWidth: 2, borderColor: '#C8A875', borderRadius: 16, padding: 35, alignItems: 'center' }}>
         <Text style={{ fontSize: 32, color: '#80613B', fontWeight: 'bold', marginBottom: 10 }}>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Text>
-        <Text style={{ fontSize: 44, color: '#63492C', fontWeight: 'bold', marginVertical: 8 }}>مواقيت الصلاة وفق التقويم الدهري</Text>
+        <Text style={{ fontSize: 44, color: '#63492C', fontWeight: 'bold', marginVertical: 8 }}>{title}</Text>
         <Text style={{ fontSize: 28, color: '#A47A45', fontWeight: 'bold', marginBottom: 20 }}>{locationName}</Text>
 
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '90%', paddingBottom: 15, borderBottomWidth: 2, borderColor: '#C8A875' }}>
@@ -191,12 +191,12 @@ const PrayerSharePage = ({ timings, locationName, gregorianDate, hijriDate, duha
   </View>
 );
 
-const MonthlyImsakiyaSharePage = ({ daysList, locationName, monthTitle }: any) => (
+const MonthlyImsakiyaSharePage = ({ daysList, locationName, monthTitle, title = 'إمساكية مواقيت الصلاة (التقويم الدهري)' }: any) => (
   <View style={{ width: 1080, backgroundColor: '#FAF5EC', padding: 35, alignItems: 'center' }}>
     <View style={{ width: '100%', borderWidth: 4, borderColor: '#8A5E33', borderRadius: 24, padding: 16, backgroundColor: '#FAF5EC' }}>
       <View style={{ width: '100%', borderWidth: 1.8, borderColor: '#C8A875', borderRadius: 18, padding: 25, alignItems: 'center' }}>
         <Text style={{ fontSize: 30, color: '#80613B', fontWeight: 'bold', marginBottom: 6 }}>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Text>
-        <Text style={{ fontSize: 42, color: '#5A3D22', fontWeight: 'bold', marginBottom: 6 }}>إمساكية مواقيت الصلاة (التقويم الدهري)</Text>
+        <Text style={{ fontSize: 42, color: '#5A3D22', fontWeight: 'bold', marginBottom: 6 }}>{title}</Text>
         <Text style={{ fontSize: 28, color: '#A47A45', fontWeight: 'bold', marginBottom: 15 }}>{locationName} • شهر {monthTitle}</Text>
 
         <View style={{ flexDirection: 'row', width: '100%', backgroundColor: '#EAD9C2', paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: '#C8A875' }}>

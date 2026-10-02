@@ -39,3 +39,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# local scratch files
+drafts
+widget_debug_log*.txt

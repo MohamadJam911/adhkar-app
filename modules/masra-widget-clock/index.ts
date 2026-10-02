@@ -2,11 +2,11 @@ import { Platform } from 'react-native';
 import { requireOptionalNativeModule } from 'expo';
 
 // ==========================================
-// ⏰ جسر JS للموديول الأصلي MasraWidgetClock (Kotlin)
+// JS bridge to the native MasraWidgetClock module (Kotlin)
 // ==========================================
-// "Optional" عمداً: لو نزل تحديث JS عبر `eas update` على نسخة تطبيق قديمة
-// ما فيها هاد الموديول الأصلي، كل الدوال هون بتصير no-op بدل ما التطبيق
-// ينهار — والويدجت بيرجع للتحديث الدوري العادي (كل ٣٠ دقيقة).
+// Optional on purpose: if a JS update (`eas update`) lands on an older build
+// without this native module, every function becomes a no-op instead of
+// crashing, and the widget falls back to the regular 30-minute update.
 
 export type RefreshScheduleResult = 'exact' | 'inexact' | 'no-widgets' | 'unavailable';
 
@@ -37,7 +37,7 @@ export const MasraWidgetClock = {
     } catch (e) {}
   },
 
-  /** false على أندرويد ١٤+ لحد ما المستخدم يفعّل "المنبهات والتذكيرات" للتطبيق. */
+  /** false on Android 14+ until the user enables "Alarms & reminders" for the app. */
   canScheduleExactAlarms(): boolean {
     try {
       return native ? native.canScheduleExactAlarms() : false;

@@ -13,7 +13,7 @@ function PrivacyPolicyScreen({ route }: { route: any }) {
   const { isDarkMode } = useContext(ThemeContext);
   const themeColors = isDarkMode ? heritageDarkTheme : heritageLightTheme;
 
-  // parallax: بيحرّك نقش الخلفية مع التمرير (خيار الخلفية ٣)
+  // Parallax: moves the background pattern with scrolling (background option 'girih')
   const bgScroll = useBackgroundScroll();
 
   return (

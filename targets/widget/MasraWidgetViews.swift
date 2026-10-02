@@ -2,15 +2,15 @@ import WidgetKit
 import SwiftUI
 
 // ==========================================
-// 🎨 تصميم ويدجت الآيفون — نفس هوية masraPalaceTheme.ts تبع أندرويد
+// iPhone widget design — same identity as Android's masraPalaceTheme.ts
 // ==========================================
-// نفس الألوان (أخضر التطبيق #12241F وذهبي التطبيق #D4A373)، نفس الخطوط
-// (Amiri / Cairo / Cinzel)، ونفس العناصر: الإطار الذهبي المزدوج، زخارف
-// الزوايا، نجمتي الإطار، النقش الهندسي، ظل المسجد، بطاقة القوس ذات الحدّ
-// الذهبي اللامع. الفرق الوحيد: بدل صناديق HH:MM، العدّاد هون بيتكّ
-// بالثواني (iOS بيحدّثه لحاله بدون ما الويدجت يعيد الرسم).
+// Same colours (app green #12241F, app gold #D4A373), fonts (Amiri / Cairo /
+// Cinzel) and elements: double gold frame, corner ornaments, frame stars,
+// geometric pattern, mosque silhouette and the arch card with a bright gold
+// border. The one difference: instead of HH:MM boxes, the countdown ticks
+// every second (iOS updates it without redrawing the widget).
 
-// MARK: - الألوان
+// MARK: - Colours
 
 extension Color {
     init(hex: UInt32, opacity: Double = 1) {
@@ -50,10 +50,10 @@ enum Palace {
     static let badge = LinearGradient(colors: [goldDeep, gold], startPoint: .leading, endPoint: .trailing)
 }
 
-// MARK: - أشكال بإحداثيات وحدة ثابتة (نفس أرقام مسارات SVG الأصلية)
+// MARK: - Shapes in fixed unit coordinates (same numbers as the original SVG paths)
 
-/// شكل مرسوم بإحداثيات صندوق unit×unit ومتمطّط لأي حجم — حتى ننقل
-/// مسارات SVG تبع أندرويد بأرقامها الحرفية.
+/// A shape drawn in a unit×unit box and stretched to any size, so the
+/// Android SVG paths can be reused with their literal numbers.
 struct UnitShape: Shape {
     let unit: CGFloat
     let build: @Sendable (inout Path) -> Void
@@ -68,7 +68,7 @@ struct UnitShape: Shape {
 
 private func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: x, y: y) }
 
-/// نجمة ربع الحزب (viewBox 24)
+/// Rub el Hizb star (viewBox 24)
 let rubElHizb = UnitShape(unit: 24) { p in
     let points: [(CGFloat, CGFloat)] = [
         (12, 2), (14.8, 6.6), (20, 6.6), (17.2, 11.2), (20, 15.8), (14.8, 15.8),
@@ -79,7 +79,7 @@ let rubElHizb = UnitShape(unit: 24) { p in
     p.closeSubpath()
 }
 
-/// نجمة الفاصل الخماسية (viewBox 24)
+/// Five-point divider star (viewBox 24)
 let dividerStar = UnitShape(unit: 24) { p in
     let points: [(CGFloat, CGFloat)] = [
         (12, 2), (14, 9), (21, 9), (15, 14), (18, 21), (12, 17), (6, 21), (9, 14), (3, 9), (10, 9),
@@ -89,7 +89,7 @@ let dividerStar = UnitShape(unit: 24) { p in
     p.closeSubpath()
 }
 
-/// بطاقة القوس: زوايا علوية كبيرة وسفلية أصغر (نفس archPath بأندرويد)
+/// Arch card: large top corners, smaller bottom ones (same as Android's archPath)
 struct ArchShape: Shape {
     var top: CGFloat
     var bottom: CGFloat
@@ -114,7 +114,7 @@ struct ArchShape: Shape {
     }
 }
 
-/// النقش الأرابيسكي المتكرر (بلاطة 45 نقطة = بلاطة الـ120 تبع الـHTML × 0.375)
+/// Repeating arabesque pattern (45pt tile = the 120px tile × 0.375)
 struct ArabesquePattern: Shape {
     func path(in rect: CGRect) -> Path {
         let s: CGFloat = 0.375
@@ -144,18 +144,18 @@ struct ArabesquePattern: Shape {
     }
 }
 
-/// ظل المسجد (مسارات الـHTML: صندوق 500×150، الرسمة بين x=115 و385)
+/// Mosque silhouette (500×150 box, drawing between x=115 and 385)
 struct MosqueSilhouette: Shape {
     func path(in rect: CGRect) -> Path {
         let s = min(rect.width * 0.8 / 290, rect.height * 0.62 / 150)
         var p = Path()
-        // القبة الكبيرة والقبتين الجانبيتين
+        // Main dome and the two side domes
         for (x0, x1, top) in [(200.0, 300.0, 70.0), (140.0, 205.0, 100.0), (295.0, 360.0, 100.0)] as [(CGFloat, CGFloat, CGFloat)] {
             p.move(to: pt(x0, 150))
             p.addCurve(to: pt(x1, 150), control1: pt(x0, top), control2: pt(x1, top))
             p.closeSubpath()
         }
-        // المئذنتين
+        // Minarets
         for x in [115.0, 371.0] as [CGFloat] {
             p.move(to: pt(x, 150))
             p.addLine(to: pt(x, 45))
@@ -169,7 +169,7 @@ struct MosqueSilhouette: Shape {
     }
 }
 
-// MARK: - الخلفية الكاملة
+// MARK: - Full background
 
 struct CornerOrnament: View {
     var body: some View {
@@ -232,8 +232,8 @@ struct PalaceBackground: View {
                 }
                 .padding(4)
 
-                // نجمتين بتكسروا خط الإطار (y=4) بالنص أعلى وأسفل: مركز
-                // النجمة (ارتفاعها 13) بيقع على 6.5، فمنرفعها 2.5 لفوق/تحت
+                // Two stars breaking the frame line (y=4) at the top and bottom centre:
+                // the star (13pt tall) is centred at 6.5, so it is shifted by 2.5
                 VStack {
                     FrameStar().offset(y: -2.5)
                     Spacer()
@@ -241,12 +241,12 @@ struct PalaceBackground: View {
                 }
             }
         }
-        // الخلفية زخرفة بحتة — ما لازم تنعكس مع اتجاه RTL
+        // Purely decorative — must not mirror in RTL
         .environment(\.layoutDirection, .leftToRight)
     }
 }
 
-// MARK: - عناصر مشتركة
+// MARK: - Shared elements
 
 struct DomeEmblem: View {
     let size: CGFloat
@@ -328,7 +328,7 @@ struct GoldBadge: View {
     }
 }
 
-/// العدّاد التنازلي الحي — بيتكّ بالثواني لحاله ("1:11:32")
+/// Live countdown that ticks every second on its own ("1:11:32")
 struct LiveCountdown: View {
     let now: Date
     let target: Date
@@ -353,7 +353,7 @@ struct LiveCountdown: View {
     }
 }
 
-// MARK: - الحجم الصغير (= ويدجت الـ2×2 بأندرويد)
+// MARK: - Small size (= the Android 2×2 widget)
 
 struct SmallPalaceLayout: View {
     let state: WidgetState
@@ -413,7 +413,7 @@ struct SmallPalaceLayout: View {
     }
 }
 
-// MARK: - الحجم المتوسط (= ويدجت الـ4×2 "القصر الزمردي" بأندرويد)
+// MARK: - Medium size (= the Android 4×2 "Emerald Palace" widget)
 
 struct MediumPalaceLayout: View {
     let state: WidgetState
@@ -424,7 +424,7 @@ struct MediumPalaceLayout: View {
             let s = min(geo.size.width / 400, geo.size.height / 190)
 
             VStack(spacing: 0) {
-                // RTL: أول عنصر بالـHStack بيطلع يمين — الهوية يمين والبطاقة يسار
+                // RTL: the first HStack item is on the right — identity on the right, card on the left
                 HStack(alignment: .top, spacing: 0) {
                     VStack(alignment: .leading, spacing: 4 * s) {
                         HStack(spacing: 8 * s) {
@@ -471,7 +471,7 @@ struct MediumPalaceLayout: View {
 
                 Spacer(minLength: 4 * s)
 
-                // RTL: الفجر (أول عنصر) بيطلع أقصى اليمين
+                // RTL: Fajr (first item) ends up on the far right
                 HStack(spacing: 6 * s) {
                     ForEach(state.cells, id: \.key) { cell in
                         PrayerCellView(cell: cell, s: s)
@@ -518,7 +518,7 @@ struct PrayerCellView: View {
     }
 }
 
-// MARK: - قبل أول فتح للتطبيق
+// MARK: - Before the app is first opened
 
 struct EmptyPalaceLayout: View {
     var body: some View {

@@ -7,7 +7,7 @@ import { formatArabicNumbers } from './formatters';
 import type { QadaItem } from '../types';
 
 // ==========================================
-// 🛠️ دوال مساعدة لحساب الوقت، الإقامة، والسنن
+// Helpers for times, iqama and sunnah prayers
 // ==========================================
 const getCountdownText = (targetTimeStr: string) => {
   if (!targetTimeStr) return '';
@@ -164,8 +164,7 @@ const calculateLastThirdOfNight = (maghribStr: string, fajrStr: string) => {
 };
 
 // ==========================================
-// 🧭 لون "مطابقة اتجاه القبلة" — درجة خضراء هادئة تتماشى مع الألوان
-// التراثية الدافئة للتطبيق (بدل الأخضر الفاقع الذي كان مستخدماً سابقاً)
+// "Qibla aligned" colour — a calm green that suits the app's warm palette
 // ==========================================
 const QIBLA_ALIGNED_COLOR = '#6E8B57';
 const QIBLA_ALIGNED_TINT_18 = 'rgba(110, 139, 87, 0.18)';
@@ -173,7 +172,7 @@ const QIBLA_ALIGNED_TINT_12 = 'rgba(110, 139, 87, 0.12)';
 const QIBLA_ALIGNED_TINT_60 = 'rgba(110, 139, 87, 0.6)';
 
 // ==========================================
-// 📌 خوارزمية قضاء الصلوات التلقائية
+// Automatic missed-prayer (qada) tracking
 // ==========================================
 const FARD_PRAYERS_LIST = [
   { key: 'fajr', name: 'صلاة الفجر' },
@@ -237,33 +236,34 @@ export const syncUncheckedPrayersToQada = async () => {
 };
 
 // ==========================================
-// 📱 تحديث ويدجتس الشاشة الرئيسية (أندرويد + آيفون)
+// Home-screen widget refresh (Android + iOS)
 // ==========================================
 const WIDGET_TIMINGS_STORAGE_KEY = '@widget_prayer_timings';
 
 /**
- * بيحدّث ويدجتس الشاشة الرئيسية على المنصّتين. timings اختيارية: لما تنعطى
- * (مواقيت اليوم من شاشة المواقيت) منحفظها ومنستخدمها لتحديد المدينة؛
- * بدونها (مثلاً عند فتح التطبيق) الويدجت بيحسب من المدينة المحفوظة.
+ * Refreshes the home-screen widgets on both platforms. `timings` is optional:
+ * when given (today's times from the Prayer Times screen) they are stored and
+ * used to resolve the location; without them (e.g. at app launch) the widgets
+ * compute from the saved location.
  */
 const updateHomeScreenWidgets = (timings?: any) => {
   if (Platform.OS === 'android') {
-    // منخزّن آخر مواقيت محسوبة حتى معالج الويدجت (widgetTaskHandler)
-    // يقدر يستنتج المدينة وقت التحديث الدوري والتطبيق مسكّر.
+    // Store the latest times so the background widget handler can still
+    // resolve the location on legacy installs without saved coordinates.
     if (timings) {
       AsyncStorage.setItem(WIDGET_TIMINGS_STORAGE_KEY, JSON.stringify(timings)).catch(() => {});
     }
-    // منمرّر المواقيت مباشرة (بدل ما يقراها من التخزين) لأنه الحفظ فوق
-    // مش مستنّى (fire-and-forget) — حتى ما يصير سباق بين الكتابة والقراءة.
-    // بيحدّث ويدجتس "القصر الزمردي" الاثنين: الـ4×2 والـ2×2 (PrayerWidget).
+    // Times are passed directly (not read back from storage) because the write
+    // above is fire-and-forget — avoids a read/write race. Refreshes both
+    // "Emerald Palace" widgets: the 4×2 and the 2×2 (PrayerWidget).
     MasraPalaceWidgetController.requestUpdate(timings);
   } else if (Platform.OS === 'ios') {
-    // بيكتب مواقيت ١٤ يوم لويدجت WidgetKit (targets/widget) وبيعيد تحميله
+    // Writes 14 days of times for the WidgetKit widget (targets/widget) and reloads it
     IosWidgetBridge.sync(timings);
   }
 };
 
-/** @deprecated الاسم القديم — صار بيحدّث الآيفون كمان. استخدم updateHomeScreenWidgets. */
+/** @deprecated Old name — it now refreshes iOS too. Use updateHomeScreenWidgets. */
 const updateAndroidWidget = (_status: any, timings?: any) => updateHomeScreenWidgets(timings);
 
 

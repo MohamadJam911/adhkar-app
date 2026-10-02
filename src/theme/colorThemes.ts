@@ -1,9 +1,9 @@
 import { BACKGROUND_STYLE } from './backgroundStyle';
 
-// ظل البطاقات حسب خيار الخلفية (backgroundStyle.ts):
-//   classic   ← نفس القيم الأصلية بالضبط
-//   courtyard ← ظل دافي واضح حتى تطفو البطاقات
-//   girih     ← ظل ناعم جداً (الفصل بالفاتح جاي من البطاقة البيضا على بيج أغمق)
+// Card shadows per background option (backgroundStyle.ts):
+//   classic   ← the original values
+//   courtyard ← a clear warm shadow so cards float
+//   girih     ← a very soft shadow (light-mode separation comes from white cards on darker beige)
 const CARD_SHADOWS = {
   classic: {
     dark: {},

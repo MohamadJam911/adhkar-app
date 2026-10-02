@@ -1,13 +1,12 @@
 // ==========================================
-// 🎨 مفتاح خلفية الشاشات — ٣ خيارات
+// Screen background switch — three options
 // ==========================================
-//   'classic'   ← خيار ١: الخلفية الأصلية (شبكة معينات ودوائر) بدون ظلال إضافية
-//   'courtyard' ← خيار ٢: "الفناء المضيء" — تدرّج مع ضوء من الأعلى، دوائر
-//                 متداخلة خافتة بتتلاشى لتحت، قوس محراب، وظل دافي للبطاقات
-//   'girih'     ← خيار ٣: نجمة ثمانية (خاتم سليمان) بنقش گره بلاطة كبيرة،
-//                 شفافية ٤.٥٪ فاتح / ٧٪ داكن، بتتلاشى لتحت، بيج أغمق شوي مع
-//                 بطاقات بيضا وظل ناعم جداً، لون خفيف بيتبع وقت الصلاة
-//                 (فجر/مغرب دافي، عشاء أبرد)، وparallax خفيف مع التمرير
-// للتبديل: غيّر القيمة هون (وبيكفي `eas update`).
+//   'classic'   ← the original background (diamond and circle grid), no extra shadows
+//   'courtyard' ← "lit courtyard": gradient with light from the top, faint
+//                 interlocking circles fading downwards, a mihrab arch and warm card shadows
+//   'girih'     ← eight-point star girih pattern, very low opacity, fading
+//                 downwards; slightly darker beige with white cards, a tint that
+//                 follows the prayer times, and subtle parallax
+// Change the value here; an `eas update` is enough.
 export type BackgroundStyle = 'classic' | 'courtyard' | 'girih';
 export const BACKGROUND_STYLE: BackgroundStyle = 'courtyard';

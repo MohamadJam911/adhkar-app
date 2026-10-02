@@ -3,24 +3,24 @@ import SwiftUI
 import CoreText
 
 // ==========================================
-// 🍎 ويدجت "مسرى المسلم" للآيفون (WidgetKit)
+// "Masra Al-Muslim" iPhone widget (WidgetKit)
 // ==========================================
-// نسخة iOS من ويدجتس أندرويد (src/widgets/masraPalace):
-//   • الحجم الصغير  (systemSmall)  = ويدجت الـ2×2 "الصلاة القادمة"
-//   • الحجم المتوسط (systemMedium) = ويدجت الـ4×2 "القصر الزمردي"
-// التطبيق بيكتب مواقيت ١٤ يوم (التقويم الدهري) بمخزن الـApp Group المشترك
-// (src/widgets/ios/IosWidgetBridge.ts)، والويدجت بيبني منها جدولاً زمنياً:
-// مدخل عند كل أذان وكل إقامة، فبيتبدّل بالثانية الصحيحة بدون ما التطبيق
-// يشتغل، والعدّاد التنازلي بيتكّ بالثواني لحاله (Text timerInterval).
+// iOS counterpart of the Android widgets (src/widgets/masraPalace):
+//   • systemSmall  = the 2×2 "next prayer" widget
+//   • systemMedium = the 4×2 "Emerald Palace" widget
+// The app writes 14 days of prayer times to the shared App Group
+// (src/widgets/ios/IosWidgetBridge.ts) and the widget builds a timeline from
+// them: one entry at every adhan and iqama, so it switches at the right second
+// without the app running, while the countdown ticks on its own (Text timerInterval).
 
-// لازم يتطابقوا مع IosWidgetBridge.ts وapp.json
+// Must match IosWidgetBridge.ts and app.json
 enum MasraShared {
     static let appGroup = "group.com.mohamad.masra"
     static let storageKey = "masra.widget.schedule"
     static let kind = "MasraPrayerWidget"
 }
 
-// MARK: - الصلوات
+// MARK: - Prayers
 
 enum PrayerKey: String, CaseIterable {
     case fajr = "Fajr", dhuhr = "Dhuhr", asr = "Asr", maghrib = "Maghrib", isha = "Isha"
@@ -35,7 +35,7 @@ enum PrayerKey: String, CaseIterable {
         }
     }
 
-    /// أيقونات SF Symbols بنفس معنى أيقونات أندرويد
+    /// SF Symbols matching the Android icons
     var symbol: String {
         switch self {
         case .fajr: return "sunrise"
@@ -46,7 +46,7 @@ enum PrayerKey: String, CaseIterable {
         }
     }
 
-    /// دقائق ما بين الأذان والإقامة (احتياط لو ما وصلت من التطبيق)
+    /// Minutes between adhan and iqama (fallback if the app did not send them)
     var defaultIqamaMinutes: Int {
         switch self {
         case .fajr: return 20
@@ -56,7 +56,7 @@ enum PrayerKey: String, CaseIterable {
     }
 }
 
-// MARK: - البيانات المشتركة من التطبيق
+// MARK: - Data shared by the app
 
 struct ScheduleDay: Decodable {
     let d: String
@@ -101,10 +101,10 @@ struct SchedulePayload: Decodable {
     }
 }
 
-// MARK: - التواريخ
-// ميلادي دايماً بغض النظر عن تقويم الجهاز — المواقيت مخزّنة بتواريخ
-// ميلادية ("2026-09-25")، ولو المستخدم مفعّل التقويم الهجري أو البوذي
-// بالإعدادات، Calendar.current كان رح يفسّر السنة غلط.
+// MARK: - Dates
+// Always Gregorian regardless of the device calendar: times are stored with
+// Gregorian dates ("2026-09-25"), and Calendar.current would misread the year
+// if the user enabled the Hijri or Buddhist calendar.
 
 enum MasraDates {
     static func gregorian() -> Calendar {
@@ -137,7 +137,7 @@ enum MasraDates {
         gregorian().date(byAdding: .day, value: n, to: date) ?? date.addingTimeInterval(Double(n) * 86_400)
     }
 
-    /// "١٤ ربيع الآخر ١٤٤٨ هـ" — تقويم أم القرى بالعربي (أرقام عربية هندية)
+    /// "١٤ ربيع الآخر ١٤٤٨ هـ" — Umm al-Qura calendar in Arabic with Arabic-Indic digits
     static func hijri(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .islamicUmmAlQura)
@@ -147,7 +147,7 @@ enum MasraDates {
     }
 }
 
-// MARK: - حالة الويدجت بلحظة معيّنة
+// MARK: - Widget state at a given moment
 
 struct PrayerCell {
     let key: PrayerKey
@@ -174,8 +174,8 @@ struct WidgetState {
     let next: NextPrayer
     let iqama: IqamaWindow?
 
-    /// نفس منطق MasraPalaceWidgetModel.ts: الصلاة القادمة من اليوم، وبعد
-    /// العشاء فجر بكرا (مع صف بكرا كامل)، ونافذة الإقامة بين الأذان والإقامة.
+    /// Same logic as MasraPalaceWidgetModel.ts: the next prayer today, after Isha
+    /// tomorrow's Fajr (with tomorrow's full row), and the iqama window after each adhan.
     static func compute(_ payload: SchedulePayload, at now: Date) -> WidgetState? {
         guard let today = payload.day(MasraDates.dayKey(now)) else { return nil }
         let tomorrow = payload.day(MasraDates.dayKey(MasraDates.addDays(1, to: now)))
@@ -220,11 +220,11 @@ struct WidgetState {
     }()
 }
 
-// MARK: - الجدول الزمني
+// MARK: - Timeline
 
 struct MasraEntry: TimelineEntry {
     let date: Date
-    /// nil = التطبيق لسا ما كتب مواقيت (أو خلصت الـ١٤ يوم)
+    /// nil = the app has not written times yet (or the 14 days ran out)
     let state: WidgetState?
 }
 
@@ -246,14 +246,14 @@ struct MasraProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<MasraEntry>) -> Void) {
         let now = Date()
         guard let payload = SchedulePayload.load() else {
-            // لسا ما في بيانات: منرجع نشيّك كل ساعة لحد ما المستخدم يفتح التطبيق
+            // No data yet: check again every hour until the user opens the app
             let entry = MasraEntry(date: now, state: nil)
             completion(Timeline(entries: [entry], policy: .after(now.addingTimeInterval(3_600))))
             return
         }
 
-        // لحظات التبدّل خلال اليومين الجايين: كل أذان، كل إقامة، ونص الليل
-        // (التاريخ الهجري واليوم الجديد). كل مدخل بيحسب حالته من جديد.
+        // Change points over the next two days: every adhan, every iqama and
+        // midnight (new Hijri date and day). Each entry recomputes its state.
         var boundaries: [Date] = []
         for offset in 0...2 {
             let dayDate = MasraDates.addDays(offset, to: now)
@@ -273,9 +273,9 @@ struct MasraProvider: TimelineProvider {
     }
 }
 
-// MARK: - الخطوط
-// منسجّل خطوط assets/ وقت التشغيل (بدل UIAppFonts) حتى ما يهمّ إذا Xcode
-// نسخها لجذر الحزمة أو لمجلد assets فرعي.
+// MARK: - Fonts
+// Fonts from assets/ are registered at runtime (instead of UIAppFonts), so it
+// does not matter whether Xcode copies them to the bundle root or a subfolder.
 
 enum MasraFonts {
     private static let registered: Void = {
@@ -296,7 +296,7 @@ enum MasraFonts {
     static func cinzel(_ size: CGFloat) -> Font { .custom("Cinzel-Bold", size: size) }
 }
 
-// MARK: - الويدجت
+// MARK: - Widget
 
 struct MasraWidgetEntryView: View {
     @Environment(\.widgetFamily) private var family

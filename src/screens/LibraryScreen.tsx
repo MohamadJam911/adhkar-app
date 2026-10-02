@@ -96,7 +96,7 @@ function LibraryScreen({ navigation, hapticEnabled, fontSize, route }: any) {
     await AsyncStorage.setItem(`@adhkar_date_${sectionKey}`, todayStr);
   };
 
-  // parallax: بيحرّك نقش الخلفية مع التمرير (خيار الخلفية ٣)
+  // Parallax: moves the background pattern with scrolling (background option 'girih')
   const bgScroll = useBackgroundScroll();
 
   return (
@@ -115,7 +115,7 @@ function LibraryScreen({ navigation, hapticEnabled, fontSize, route }: any) {
 
             return (
               <View key={sec.key} style={[styles.menuCard, themeColors.card, isExpanded && { borderColor: '#D4A373', borderWidth: 2 }]}>
-                {/* الصف معكوس: السهم وشارة العدّاد على اليسار، والعنوان والوصف على اليمين */}
+                {/* Reversed row: arrow and counter badge on the left, title and description on the right */}
                 <TouchableOpacity
                   onPress={() => toggleSection(sec.key)}
                   activeOpacity={0.8}

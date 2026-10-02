@@ -10,9 +10,9 @@ import { ExactImagePatternWall, HeritageArchBanner, useBackgroundScroll } from '
 import { openStoreForRating } from '../utils/rateApp';
 
 // ==========================================
-// ℹ️ شاشة "عن التطبيق": أيقونة ورقم الإصدار (مسحوب مباشرة من app.json عبر
-// expo-constants حتى ما يحتاج تحديث يدوي بكل نسخة)، نبذة قصيرة عن التطبيق،
-// زر تواصل معنا (نفس إيميل التواصل بالصفحة الرئيسية)، ورابط لسياسة الخصوصية.
+// About screen: icon and version (read from app.json through expo-constants,
+// so it never needs a manual update), a short description, a contact button
+// and a link to the privacy policy.
 function AboutScreen({ route, navigation }: { route: any; navigation: any }) {
   const { fontSize } = route.params || { fontSize: 22 };
   const { isDarkMode } = useContext(ThemeContext);
@@ -23,7 +23,7 @@ function AboutScreen({ route, navigation }: { route: any; navigation: any }) {
     Linking.openURL(`mailto:masra.al.rasul.app@gmail.com?subject=${encodeURIComponent('تواصل من مستخدم تطبيق مسرى المسلم')}`);
   };
 
-  // parallax: بيحرّك نقش الخلفية مع التمرير (خيار الخلفية ٣)
+  // Parallax: moves the background pattern with scrolling (background option 'girih')
   const bgScroll = useBackgroundScroll();
 
   return (

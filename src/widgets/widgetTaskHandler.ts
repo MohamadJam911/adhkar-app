@@ -1,27 +1,26 @@
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 import { MasraPalaceWidgetController } from './masraPalace';
 
-// هاي الدالة بتشتغل بشكل "headless" (بدون ما يكون التطبيق مفتوح أصلاً)،
-// وبتنفذ لما: المستخدم يضيف ويدجت من ويدجتس التطبيق (WIDGET_ADDED)، أو
-// لما يصير تحديث (WIDGET_UPDATE — كل دقيقة عبر منبّه masra-widget-clock،
-// أو كل نص ساعة من أندرويد كاحتياط)، أو لما المستخدم يغيّر حجمه
-// (WIDGET_RESIZED)، أو لما يضغط عليه (WIDGET_CLICK).
+// Runs headless (the app does not need to be open) when the user adds a
+// widget (WIDGET_ADDED), on updates (WIDGET_UPDATE — every minute through the
+// masra-widget-clock alarm, or every 30 minutes from Android as a fallback),
+// on resize (WIDGET_RESIZED) and on tap (WIDGET_CLICK).
 //
-// الويدجتين (الـ4×2 "MasraPalaceWidget" والـ2×2 "PrayerWidget") بيحسبوا
-// مواقيتهم بنفسهم من جدول DAHRI_TIMES — شوف src/widgets/masraPalace.
-// أندرويد بس: على الآيفون الويدجتس مكتوبة بـSwift (targets/widget).
+// Both widgets (4×2 "MasraPalaceWidget" and 2×2 "PrayerWidget") compute their
+// own times — see src/widgets/masraPalace. Android only: the iPhone widget is
+// written in Swift (targets/widget).
 export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
   const { widgetName } = props.widgetInfo;
   if (!MasraPalaceWidgetController.handles(widgetName)) return;
 
   if (props.widgetAction === 'WIDGET_DELETED') {
-    // منعيد الحجز (أو منلغيه إذا ما ضل ولا نسخة على الشاشة) — الموديول
-    // الأصلي بيرجع "no-widgets" وبيلغي المنبّه لحاله بهالحالة.
+    // Reschedule (or cancel if no instance is left) — the native module
+    // returns "no-widgets" and cancels the alarm itself in that case.
     MasraPalaceWidgetController.rescheduleOrCancel(widgetName);
     return;
   }
 
-  // clickAction="OPEN_APP" بيفتح التطبيق تلقائياً وقت الضغط — منعيد
-  // الرسم بكل الحالات (إضافة، تحديث، تغيير حجم، ضغط).
+  // clickAction="OPEN_APP" opens the app on tap; the widget is redrawn in
+  // every case (added, update, resize, click).
   props.renderWidget(await MasraPalaceWidgetController.buildElement(null, props.widgetInfo, widgetName));
 }

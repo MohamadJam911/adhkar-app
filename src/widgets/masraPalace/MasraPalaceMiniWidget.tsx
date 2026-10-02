@@ -11,17 +11,17 @@ import {
 import type { MasraPalaceViewModel } from './MasraPalaceWidgetModel';
 
 // ==========================================
-// 📱 ويدجت 2×2 "الصلاة القادمة" — نسخة مصغّرة من "القصر الزمردي"
+// 2×2 "next prayer" widget — a compact "Emerald Palace"
 // ==========================================
-// نفس الخلفية والذهبي والخطوط وبطاقة القوس تبع ويدجت الـ4×2
-// (MasraPalaceWidget.tsx)، بس مرتّبة عمودياً لمربّع:
-//   الهوية (شعار + الاسم) ← بطاقة القوس (الشارة، أيقونة واسم الصلاة،
-//   العدّاد HH:MM، وقت الأذان) ← اسم المدينة.
-// وبين الأذان والإقامة البطاقة بتتحوّل لـ"حان الآن وقت …" مع عدّاد
-// الإقامة (نفس ميزة الويدجت الصغير القديم).
+// Same background, gold, fonts and arch card as the 4×2 widget
+// (MasraPalaceWidget.tsx), stacked vertically for a square:
+//   identity (emblem + name) → arch card (badge, prayer icon and name,
+//   HH:MM countdown, adhan time) → city name.
+// Between adhan and iqama the card switches to "it is now time for …" with
+// the iqama countdown.
 //
-// المقاسات بوحدات شبكة 170×200 مضروبة بـs = min(عرض/170، ارتفاع/200) —
-// بتحافظ على النسب من 2×2 صغير (~110dp) لـ2×2 طويل (سامسونج ~181×261).
+// Sizes are on a 170×200 grid multiplied by s = min(width/170, height/200),
+// keeping proportions from a small 2×2 (~110dp) to a tall one (Samsung ~181×261).
 
 const APP_NAME = 'مسرى المسلم';
 const REF_WIDTH = 170;
@@ -54,7 +54,7 @@ export function MasraPalaceMiniWidget({ model, widgetWidth, widgetHeight }: Masr
           paddingBottom: 11 * s,
         }}
       >
-        {/* الهوية: الشعار يسار الاسم (ترتيب RTL يدوي) */}
+        {/* Identity: emblem to the left of the name (manual RTL) */}
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
           <FlexWidget
             style={{
@@ -102,7 +102,7 @@ function MiniArchCard({ model, s }: { model: MasraPalaceViewModel; s: number }) 
   const iqama = model.iqama;
   const next = model.next;
 
-  // وقت الإقامة: البطاقة بتعرض الصلاة الحالية وعدّاد الإقامة؛ غير هيك الصلاة القادمة وعدّادها
+  // During iqama the card shows the current prayer and the iqama countdown; otherwise the next prayer
   const badge = iqama ? 'حان الآن وقت' : next?.isTomorrow ? 'أقرب صلاة • غداً' : 'أقرب صلاة';
   const iconKey = iqama?.key ?? next?.key;
   const label = iqama?.label ?? next?.label ?? '—';
@@ -138,7 +138,7 @@ function MiniArchCard({ model, s }: { model: MasraPalaceViewModel; s: number }) 
           <TextWidget text={badge} style={{ fontFamily: F.label, fontSize: 8 * s, color: C.emerald950, textAlign: 'center' }} />
         </FlexWidget>
 
-        {/* أيقونة الصلاة يسار اسمها */}
+        {/* Prayer icon to the left of its name */}
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
           {!!iconKey && (
             <SvgWidget
@@ -159,14 +159,14 @@ function MiniArchCard({ model, s }: { model: MasraPalaceViewModel; s: number }) 
           />
         </FlexWidget>
 
-        {/* العدّاد HH : MM — بيتحدّث كل دقيقة عبر masra-widget-clock */}
+        {/* HH : MM countdown — redrawn every minute by masra-widget-clock */}
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
           <MiniTimeBox value={hours} s={s} />
           <TextWidget text=":" style={{ fontFamily: F.timer, fontSize: 12 * s, color: C.goldBright, marginHorizontal: 4 * s }} />
           <MiniTimeBox value={minutes} s={s} />
         </FlexWidget>
 
-        {/* وقت الأذان/الإقامة — كبير وعريض لسهولة القراءة */}
+        {/* Adhan / iqama time — large and bold for readability */}
         <TextWidget
           text={footer}
           style={{ fontFamily: F.label, fontSize: 11.5 * s, color: C.goldBright, textAlign: 'center', marginTop: 2 * s }}

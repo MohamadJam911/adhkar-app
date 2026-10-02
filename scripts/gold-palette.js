@@ -1,27 +1,26 @@
 #!/usr/bin/env node
 // ==========================================
-// 🎨 مبدّل لون الذهبي بشاشات التطبيق — مع حفظ اللون القديم
+// Switches the app's gold colour, keeping the original recoverable
 // ==========================================
-// الاستخدام (من مجلد adhkar-app):
-//   node scripts/gold-palette.js apply    ← الذهبي الغني الجديد (الحالي)
-//   node scripts/gold-palette.js revert   ← يرجّع الذهبي الرملي القديم بالضبط
-//   node scripts/gold-palette.js status   ← أي لون مستخدم حالياً
+// Usage (from the adhkar-app folder):
+//   node scripts/gold-palette.js apply    ← richer antique gold
+//   node scripts/gold-palette.js revert   ← restores the original sand gold exactly (current)
+//   node scripts/gold-palette.js status   ← which colour is in use
 //
-// بيبدّل كل صيغ اللون: ‎#RRGGBB، ‎#RRGGBBAA (مع الشفافية)، وrgba(r, g, b, a)،
-// بكل ملفات src/ وApp.tsx — ما عدا الويدجتس (src/widgets و targets/) لأنها
-// عندها لوحة ألوان خاصة فيها (masraPalaceTheme.ts / MasraWidgetViews.swift).
-// الألوان الجديدة ما كانت مستخدمة بأي مكان قبل التبديل، فالرجوع دقيق ١٠٠٪.
-// بعد أي تبديل: `eas update` بيكفي (مش لازم build).
+// Replaces every form of the colour (#RRGGBB, #RRGGBBAA, rgba(r, g, b, a)) in
+// src/ and App.tsx — except the widgets (src/widgets and targets/), which have
+// their own palettes. The new colour is used nowhere else, so revert is exact.
+// After switching, an `eas update` is enough (no new build).
 
 const fs = require('fs');
 const path = require('path');
 
-// 💾 اللون المحفوظ (القديم) ← اللون الجديد
+// Saved (original) colour ← new colour
 const PALETTE = [
   {
     name: 'الذهبي الأساسي (نصوص، أيقونات، أزرار، حدود)',
-    old: { hex: 'D4A373', rgb: [212, 163, 115] }, // ذهبي رملي فاتح — كان بيبين مايل للأصفر بالوضع الداكن
-    new: { hex: 'C99A42', rgb: [201, 154, 66] }, // ذهبي عتيق غني
+    old: { hex: 'D4A373', rgb: [212, 163, 115] },  // light sand gold — the original
+    new: { hex: 'C99A42', rgb: [201, 154, 66] },  // richer antique gold
   },
   {
     name: 'الذهبي الفاتح (لمسات مضيئة)',
@@ -45,13 +44,13 @@ function listFiles(dir, out = []) {
 
 function swap(text, from, to) {
   let count = 0;
-  // #RRGGBB و#RRGGBBAA (الشفافية بتضل متل ما هي)
+  // #RRGGBB and #RRGGBBAA (alpha kept as is)
   const hexRe = new RegExp(`#${from.hex}(?=[0-9A-Fa-f]{2}\\b|\\b)`, 'gi');
   text = text.replace(hexRe, () => {
     count++;
     return `#${to.hex}`;
   });
-  // rgba(r, g, b, a) / rgb(r, g, b) — منحافظ على نفس المسافات
+  // rgba(r, g, b, a) / rgb(r, g, b) — spacing preserved
   const [r, g, b] = from.rgb;
   const rgbRe = new RegExp(`(rgba?\\(\\s*)${r}(\\s*,\\s*)${g}(\\s*,\\s*)${b}(?=\\s*[,)])`, 'g');
   text = text.replace(rgbRe, (_m, a, s1, s2) => {

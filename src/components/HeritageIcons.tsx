@@ -84,7 +84,7 @@ const HeritageIcons = {
       <Circle cx="12" cy="14" r="1.5" fill={color} />
     </Svg>
   ),
-  // الإعدادات (ترس) — بدل رمز ⚙️ اللي بيطلع بلون النظام مش بالذهبي
+  // Settings (gear) — instead of the ⚙️ emoji, which renders in the system colour rather than gold
   Gear: ({ size = 22, color = '#D4A373' }: { size?: number; color?: string }) => (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Circle cx="12" cy="12" r="3.2" stroke={color} strokeWidth="1.8" />
@@ -97,7 +97,7 @@ const HeritageIcons = {
       />
     </Svg>
   ),
-  // أيقونة المشاركة (ثلاث عُقد متصلة) — بدل كلمة "مشاركة" بأزرار الآية والحديث
+  // Share (three connected nodes) — instead of the word "share" on the verse and hadith buttons
   Share: ({ size = 22, color = '#D4A373' }: { size?: number; color?: string }) => (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Circle cx="18" cy="5" r="2.8" stroke={color} strokeWidth="1.8" />
@@ -106,7 +106,7 @@ const HeritageIcons = {
       <Path d="M8.5 13.5l7 4M15.5 6.5l-7 4" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
     </Svg>
   ),
-  // القلم (قلم القصب) — عنوان بطاقة الحديث: كلام النبي ﷺ المكتوب والمروي
+  // Reed pen — hadith card title
   Qalam: ({ size = 22, color = '#D4A373' }: { size?: number; color?: string }) => (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path d="M5 19L17.5 4.5l2 2L7 21z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
@@ -114,7 +114,7 @@ const HeritageIcons = {
       <Path d="M3 22c2-1.5 3.5-1 5-.5" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
     </Svg>
   ),
-  // الشمسة — الوردة المشعّة اللي بتزيّن أسماء الله بالمصاحف المذهّبة
+  // Shamsa — the radiant rosette decorating the Names of Allah in illuminated mushafs
   Shamsa: ({ size = 22, color = '#D4A373' }: { size?: number; color?: string }) => (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Circle cx="12" cy="12" r="4.2" stroke={color} strokeWidth="1.6" />

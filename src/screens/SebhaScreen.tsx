@@ -11,8 +11,8 @@ import { formatArabicNumbers } from '../utils/formatters';
 import { logStat } from '../utils/statsLogger';
 
 function SebhaScreen({ hapticEnabled, fontSize }: { hapticEnabled: boolean, fontSize: number }) {
-  // العدّاد بيضل ماشي (٣٣ ← ٣٤ ← …) بدل ما يرجع صفر عند الهدف — حبّات
-  // المسبحة حوالين الدائرة بتوضّح موقعك بكل ٣٣، والجولة محسوبة من العدد.
+  // The counter keeps going (33 → 34 → …) instead of resetting at the target —
+  // the bead ring shows the position within each 33, and the round is derived from the count.
   const [count, setCount] = useState(0);
   const [target, setTarget] = useState<number | null>(33);
   const { isDarkMode } = useContext(ThemeContext);
@@ -28,10 +28,10 @@ function SebhaScreen({ hapticEnabled, fontSize }: { hapticEnabled: boolean, font
     if (!hapticEnabled) return;
     const reachedTarget = !!target && nextCount % target === 0;
     if (reachedTarget || nextCount % 33 === 0) {
-      // اكتملت ٣٣ (أو الهدف)
+      // Completed 33 (or the target)
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else if (nextCount > 1 && nextCount % 33 === 1) {
-      // الضغطة ٣٤ (وأخواتها): مع النبضة الذهبية
+      // Tap 34 (and every 33 after): with the gold pulse
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } else {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

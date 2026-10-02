@@ -33,12 +33,12 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
   const [nameIndex, setNameIndex] = useState(() => Math.floor(Math.random() * ALLAH_NAMES.length));
   const [verseIndex, setVerseIndex] = useState(() => Math.floor(Math.random() * QURAN_VERSES_DATA.length));
   const [hadithIndex, setHadithIndex] = useState(() => Math.floor(Math.random() * HADITHS_DATA.length));
-  // بيتحكم بعرض نص الحديث كامل أو مختصر بـ"عرض المزيد" — بيترجع لوضعه المختصر
-  // تلقائياً كل ما ينتقل المستخدم لحديث جديد (بدالة handleNextHadith تحت).
+  // Whether the hadith is fully expanded ("show more"); resets to collapsed
+  // whenever the user moves to a new hadith (handleNextHadith).
   const [hadithExpanded, setHadithExpanded] = useState(false);
-  // عدد أسطر نص الحديث الفعلي بعد أول عرض كامل له (نقيسه عبر onTextLayout)؛
-  // null يعني لسا ما انقاس. لو تجاوز 4 أسطر منعرضه مختصر لأول 3 أسطر بس
-  // مع زر "عرض المزيد"، ولو 4 أسطر أو أقل منعرضه كامل دايماً بدون زر.
+  // Line count of the hadith text measured on first full render (onTextLayout);
+  // null until measured. Over 4 lines it is collapsed to 3 with a "show more"
+  // button; 4 lines or fewer are always shown in full.
   const [hadithLineCount, setHadithLineCount] = useState<number | null>(null);
 
   const [shareModalVisible, setShareModalVisible] = useState(false);
@@ -122,8 +122,7 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
     await logStat('dhikr', 1);
   };
 
-  // إعادة قياس عدد أسطر الحديث لو تغيّر حجم الخط من الإعدادات، لأن ده بيأثر
-  // على التفاف النص وعدد الأسطر الفعلي.
+  // Re-measure when the font size changes in Settings, since it changes the line wrapping.
   useEffect(() => {
     setHadithLineCount(null);
   }, [fontSize]);
@@ -209,14 +208,14 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
     { key: 'dua', label: 'تحري ساعة الاستجابة بعد العصر' },
   ];
 
-  // parallax: بيحرّك نقش الخلفية مع التمرير (خيار الخلفية ٣)
+  // Parallax: moves the background pattern with scrolling (background option 'girih')
   const bgScroll = useBackgroundScroll();
 
   return (
     <ExactImagePatternWall isDarkMode={isDarkMode}>
       <StatusBar style={isDarkMode ? "light" : "dark"} />
 
-      {/* رندر خارج الشاشة بـ left: -9999 لمنع حجب اللمس نهائياً على أندرويد */}
+      {/* Off-screen render (left: -9999) so it never blocks touches on Android */}
       <View style={{ position: 'absolute', left: -9999, top: 0, width: 1080, opacity: 0 }} pointerEvents="none" collapsable={false}>
         <View ref={shareCardRef} collapsable={false} key={`verse-card-${verseIndex}`}>
           <QuranSharePage verse={currentVerse} fontsLoaded={fontsLoaded} />
@@ -285,7 +284,7 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
           </View>
         )}
 
-        {/* بطاقة الآية — زر المشاركة على اليسار والعنوان على اليمين */}
+        {/* Verse card — share button on the left, title on the right */}
         <TouchableOpacity style={[styles.verseCard, themeColors.card, { paddingVertical: 14, paddingHorizontal: 16 }]} onPress={handleNextVerse} activeOpacity={0.85}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
             <TouchableOpacity
@@ -325,7 +324,7 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
             {toEasternArabicNumerals(currentVerse.reference)}
           </Text>
 
-          {/* فاصل بين نص الآية والتفسير */}
+          {/* Divider between the verse and its explanation */}
           <GoldenDivider style={{ width: '70%', alignSelf: 'center', marginTop: 2, marginBottom: 6 }} />
 
           <Text style={[styles.verseMeaning, themeColors.subText, { fontSize: fontSize - 3, textAlign: 'right', marginTop: 2 }]}>
@@ -338,7 +337,7 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
           </Text>
         </TouchableOpacity>
 
-        {/* بطاقة الحديث النبوي — زر المشاركة على اليسار والعنوان على اليمين */}
+        {/* Hadith card — share button on the left, title on the right */}
         <TouchableOpacity style={[styles.verseCard, themeColors.card, { paddingVertical: 14, paddingHorizontal: 16 }]} onPress={handleNextHadith} activeOpacity={0.85}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
             <TouchableOpacity
@@ -396,7 +395,7 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
             {currentHadith.reference}
           </Text>
 
-          {/* فاصل بين نص الحديث والشرح */}
+          {/* Divider between the hadith and its explanation */}
           <GoldenDivider style={{ width: '70%', alignSelf: 'center', marginTop: 2, marginBottom: 6 }} />
 
           <Text style={[styles.verseMeaning, themeColors.subText, { fontSize: fontSize - 3, textAlign: 'right', marginTop: 2 }]}>
@@ -409,7 +408,7 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
           </Text>
         </TouchableOpacity>
 
-        {/* نافذة مشاركة الآية (مصحح ليقوم بالوظيفة الصحيحة لكل زر) */}
+        {/* Verse share sheet */}
         <Modal visible={shareModalVisible} transparent={true} animationType="fade">
           <View style={styles.modalOverlay}>
             <View style={[styles.modalContent, themeColors.card]}>
@@ -435,7 +434,7 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
           </View>
         </Modal>
 
-        {/* نافذة مشاركة الحديث (مصحح ليقوم بالوظيفة الصحيحة لكل زر) */}
+        {/* Hadith share sheet */}
         <Modal visible={hadithShareModalVisible} transparent={true} animationType="fade">
           <View style={styles.modalOverlay}>
             <View style={[styles.modalContent, themeColors.card]}>
@@ -492,7 +491,7 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
               من أسماء الله الحسنى
             </Text>
           </View>
-          {/* ارتفاع سطر كافي للتشكيل المتراكب (شدّة+فتحة فوق، كسرة تحت) حتى ما ينقصّ */}
+          {/* Line height tall enough for stacked diacritics (shadda + fatha above, kasra below) */}
           <Text
             style={[
               styles.allahName,
@@ -522,7 +521,7 @@ function HomeScreen({ navigation, hapticEnabled, fontSize }: { navigation: any, 
           </View>
         </TouchableOpacity>
 
-        {/* أزرار أذكار الصباح والمساء والتسبيح الحر */}
+        {/* Morning / evening adhkar and free tasbih buttons */}
         <View style={styles.gridContainer}>
           <TouchableOpacity
             style={[styles.gridItem, themeColors.card]}

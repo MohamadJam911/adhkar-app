@@ -1,10 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ==========================================
-// 📊 تسجيل إحصائيات الاستخدام اليومية (تسبيح / أذكار / آيات / صلوات)
+// Daily usage statistics (tasbih / adhkar / verses / prayers)
 // ==========================================
-// دالة مشتركة تستخدمها عدة شاشات (الرئيسية، الإحصائيات، الأذكار، السبحة،
-// مواقيت الصلاة) لتسجيل عدد مرات كل نوع نشاط باليوم الحالي.
+// Shared helper used by several screens to count each kind of activity for the current day.
 async function logStat(key: 'tasbeeh' | 'dhikr' | 'ayah' | 'prayer', countToAdd = 1) {
   try {
     const todayStr = new Date().toISOString().split('T')[0];

@@ -6,7 +6,7 @@ import { formatArabicNumbers } from '../utils/formatters';
 import type { Dhikr } from '../types';
 
 // ==========================================
-// 📿 بطاقة ذِكر مع نبضة خفيفة عند الضغط
+// Dhikr card with a soft pulse on tap
 // ==========================================
 const DhikrPulseCard = ({
   dhikr,

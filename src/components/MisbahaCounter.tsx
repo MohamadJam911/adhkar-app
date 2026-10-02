@@ -13,16 +13,16 @@ import Animated, {
 } from 'react-native-reanimated';
 
 // ==========================================
-// 📿 عدّاد المسبحة المتحرّك
+// Animated misbaha counter
 // ==========================================
-// ٣٣ حبّة بلون ذهبي خافت حوالين دائرة العدّاد (متل حبّات المسبحة الحقيقية)،
-// مع حبّة الإمام بالأعلى:
-//   • كل ضغطة بتضوّي الحبّة الجاية بذهبي ساطع، مع "نبضة" صغيرة للحبّة الجديدة
-//   • عند ٣٣: كل الحبّات مضوّية + حبّة الإمام — اكتملت الجولة
-//   • الضغطة ٣٤: نبضة ذهبية (الدائرة بتكبر ~٦٪ وهالة ذهبية بتلمع وتختفي)،
-//     وكل الحبّات بترجع ذهبي خافت، وكل شي بيرجع لوضعه خلال ~٢٥٠ms، وبعدها
-//     بتضوّي أول حبّة (لأنه الضغطة ٣٤ هي أول ذكر بالجولة الجديدة)
-// إذا "تقليل الحركة" مفعّل بإعدادات الجوال: بدون تكبير، بس هالة خفيفة.
+// 33 dim gold beads around the counter (like a real misbaha), with the imam
+// bead on top:
+//   • each tap lights the next bead in bright gold, with a small pulse
+//   • at 33 every bead and the imam bead are lit — the round is complete
+//   • tap 34: a gold pulse (the circle grows ~6% and a gold halo flashes),
+//     the beads reset within ~250 ms, then the first bead lights up (tap 34
+//     is the first dhikr of the new round)
+// With "Reduce Motion" enabled: no scaling, only a soft halo.
 
 const BEADS = 33;
 const PULSE_UP_MS = 110;
@@ -31,15 +31,15 @@ const RELIGHT_DELAY_MS = PULSE_UP_MS + PULSE_DOWN_MS - 20;
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-/** كم حبّة مضوّية لعدد معيّن: 1..33 بكل جولة (0 قبل أول ضغطة) */
+/** How many beads are lit for a count: 1..33 per round (0 before the first tap) */
 const litForCount = (count: number) => (count <= 0 ? 0 : ((count - 1) % BEADS) + 1);
 
 // ==========================================
-// 🌸 زخرفة جوا الدائرة الذهبية (بالأبيض الشفاف، خلف الرقم):
-//   • إطار مفصّص (scalloped) متل حافة الميداليات بالمخطوطات المذهّبة
-//   • وردة ١٢ بتلة نباتية بتشعّ من المركز
-//   • حلقة نقاط ناعمة بين البتلات وحلقة داخلية صغيرة
-// viewBox 100×100 فبتتأقلم مع أي حجم (السبحة الكبيرة والذكر السريع).
+// Ornament inside the gold circle (translucent white, behind the number):
+//   • a scalloped border like the edge of illuminated-manuscript medallions
+//   • a 12-petal floral rosette radiating from the centre
+//   • a ring of soft dots between the petals and a small inner ring
+// 100×100 viewBox, so it fits any size (Misbaha screen and quick dhikr).
 // ==========================================
 const SCALLOPS = 24;
 const scallopPath = (() => {
@@ -87,7 +87,7 @@ const MedallionArabesque = () => (
 
 type Props = {
   count: number;
-  /** قطر الدائرة الذهبية نفسها (الحبّات بتنرسم حواليها) */
+  /** Diameter of the gold circle itself (the beads are drawn around it) */
   size: number;
   isDarkMode: boolean;
   onPress: () => void;
@@ -99,7 +99,7 @@ type Props = {
 function MisbahaCounter({ count, size, isDarkMode, onPress, accessibilityLabel, accessibilityHint, children }: Props) {
   const reduceMotion = useReducedMotion();
 
-  // مساحة حلقة الحبّات حوالين الدائرة
+  // Room for the bead ring around the circle
   const ringGap = Math.max(16, size * 0.11);
   const outer = size + ringGap * 2;
   const ringRadius = size / 2 + ringGap / 2;
@@ -120,7 +120,7 @@ function MisbahaCounter({ count, size, isDarkMode, onPress, accessibilityLabel, 
     const increased = count > prevCount.current;
     prevCount.current = count;
 
-    // الضغطة الأولى بعد اكتمال ٣٣ (٣٤، ٦٧، ١٠٠…): نبضة ذهبية ورجوع كل الحبّات
+    // First tap after completing 33 (34, 67, 100…): gold pulse and bead reset
     const startsNewRound = increased && count > 1 && count % BEADS === 1;
     if (startsNewRound) {
       setLit(0);
@@ -155,7 +155,7 @@ function MisbahaCounter({ count, size, isDarkMode, onPress, accessibilityLabel, 
   }));
   const newestBeadProps = useAnimatedProps(() => ({ r: beadR * pop.value }));
 
-  // الحبّات موزّعة بالتساوي حوالين الدائرة مع فراغ بالأعلى لحبّة الإمام
+  // Beads evenly spaced around the circle, leaving a gap at the top for the imam bead
   const gapDeg = 16;
   const beads = Array.from({ length: BEADS }, (_, i) => {
     const deg = -90 + gapDeg / 2 + ((360 - gapDeg) / (BEADS - 1)) * i;
@@ -177,7 +177,7 @@ function MisbahaCounter({ count, size, isDarkMode, onPress, accessibilityLabel, 
       accessibilityHint={accessibilityHint}
       accessibilityValue={{ text: `${count}` }}
     >
-      {/* حلقة الحبّات */}
+      {/* Bead ring */}
       <Svg width={outer} height={outer} style={StyleSheet.absoluteFill} pointerEvents="none">
         <Circle cx={outer / 2} cy={outer / 2} r={ringRadius} stroke={offColor} strokeWidth={0.8} fill="none" />
         {beads.map((b, i) => {
@@ -194,14 +194,14 @@ function MisbahaCounter({ count, size, isDarkMode, onPress, accessibilityLabel, 
             </React.Fragment>
           );
         })}
-        {/* حبّة الإمام — بتضوّي لما تكتمل الجولة */}
+        {/* Imam bead — lights up when the round is complete */}
         <Path
           d={`M${outer / 2 - imamW / 2} ${imamTop} h${imamW} l${-imamW * 0.15} ${imamH} h${-imamW * 0.7} z`}
           fill={roundComplete ? litColor : offColor}
         />
       </Svg>
 
-      {/* الهالة الذهبية للنبضة */}
+      {/* Pulse halo */}
       <Animated.View
         pointerEvents="none"
         style={[
@@ -218,7 +218,7 @@ function MisbahaCounter({ count, size, isDarkMode, onPress, accessibilityLabel, 
         ]}
       />
 
-      {/* الدائرة الذهبية والرقم */}
+      {/* Gold circle and number */}
       <Animated.View style={circleStyle}>
         <LinearGradient
           colors={['#E5B279', '#C8935E']}

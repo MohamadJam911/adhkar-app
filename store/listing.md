@@ -18,6 +18,12 @@ Draft text and answers for App Store Connect and Google Play Console. Character 
 أذكار,أذان,مواقيت,الصلاة,قبلة,سبحة,تسبيح,قرآن,حديث,أسماء الله,إمساكية,القدس,فلسطين,دعاء,رمضان
 ```
 
+**Apple promotional text** (170 characters, can be changed any time without a new review):
+
+```
+رفيقك اليومي: أذكار الصباح والمساء، مواقيت الصلاة بالتقويم الدهري، القبلة والسبحة، وويدجت بعدّاد مباشر للصلاة القادمة — بدون إعلانات ولا جمع بيانات.
+```
+
 **Categories:** Apple — Lifestyle (secondary: Reference). Google — Lifestyle.
 
 ---
@@ -28,6 +34,7 @@ Draft text and answers for App Store Connect and Google Play Console. Character 
 
 🕌 مواقيت الصلاة
 • مواقيت دقيقة حسب التقويم الدهري لمدن فلسطين، مع مراعاة فرق كل مدينة والتوقيت الصيفي
+• وفي باقي دول العالم: حساب فلكي بالطريقة المعتمدة في بلدك (أم القرى، الهيئة المصرية، رابطة العالم الإسلامي…)
 • تحديد موقعك تلقائياً أو اختيار مدينتك
 • إمساكية الشهر كاملة، ومشاركة مواقيت اليوم كصورة
 • عدّاد للصلاة القادمة ووقت الإقامة
@@ -66,7 +73,7 @@ Draft text and answers for App Store Connect and Google Play Console. Character 
 
 Your daily companion for the remembrance of Allah, in an elegant green-and-gold heritage design.
 
-• Prayer times from the Palestinian Dahri calendar, adjusted per city and for summer time; GPS or a chosen city; monthly Imsakiya; next-prayer and iqama countdown
+• Prayer times from the Palestinian Dahri calendar, adjusted per city and for summer time — and astronomical calculation with your country's official method everywhere else; GPS or a chosen city; monthly Imsakiya; next-prayer and iqama countdown
 • A stable, accurate Qibla compass with haptic guidance
 • Morning and evening adhkar with daily progress tracking
 • A digital misbaha with 33 beads that light up as you count, and targets of 33, 100 or free counting
@@ -124,6 +131,46 @@ The home-screen widget ("مسرى المسلم", small and medium) shows the nex
 with a live countdown.
 
 The app is in Arabic.
+```
+
+---
+
+## App Review reply — Guideline 2.1 (Information Needed)
+
+Paste this as the reply in App Store Connect **and** into App Review Information → Notes. Attach the screen recording to the reply.
+
+```
+Thank you for reviewing Masra Al-Muslim. Please find the requested information below; a screen recording from a physical iPhone running the latest iOS is attached.
+
+1. SCREEN RECORDING
+Attached. It starts from launching the app and shows the typical flow: Home (verse and hadith of the day), Adhkar library (counting a dhikr), Prayer Times with the daily sunnah prayers, Qibla compass, digital Misbaha, Statistics, and adding the home-screen widgets. The app has no account registration, login, user-generated content or paid content.
+
+2. PURPOSE AND AUDIENCE
+Masra Al-Muslim is a free Islamic daily companion for Arabic-speaking Muslims, primarily in Palestine. It brings together in one place, without ads or accounts: morning and evening adhkar (remembrances) with progress tracking, accurate prayer times based on the Palestinian Dahri calendar, the Qibla direction, a digital misbaha (prayer-bead counter), a daily Quran verse with a short explanation, a hadith with its source, and the 99 Names of Allah. Its value is a calm, distraction-free and private tool for daily worship.
+
+3. SETUP AND ACCESS
+No login, account or sample files are needed — every feature is available immediately after launch.
+- Prayer Times tab: allow location, or tap "تغيير البلد" (Change city) and pick a city. If location is declined, Jerusalem is used.
+- Prayer Times tab, lower section: Qibla compass (hold the phone flat).
+- Adhkar tab: open any category and tap a dhikr to count it.
+- Misbaha tab: tap the bead to count; choose 33, 100 or free.
+- Settings (gear icon, top left): enable prayer and adhkar reminders (local notifications).
+- Widgets: long-press the Home Screen → "+" → search "مسرى المسلم" → add the small or medium widget.
+The interface is in Arabic.
+
+4. EXTERNAL SERVICES
+The app works fully offline; all content and the prayer-time tables are bundled in the app. It uses only:
+- Apple Core Location (on-device) for the Qibla and prayer times, and Apple's reverse geocoding to display the city name. Location is never stored on a server or shared.
+- Apple local notifications (UserNotifications) for reminders — no push server.
+- Apple WidgetKit for the home-screen widgets.
+- Expo Updates (expo.dev) to download app content updates; no user data is sent.
+There is no analytics, advertising, authentication, payment or AI service, and no data is collected.
+
+5. REGIONAL DIFFERENCES
+The app works the same in all regions. Prayer times follow the Palestinian Dahri calendar, so they are most precise for Palestine and nearby areas; all other features (adhkar, Qibla, misbaha, Quran and hadith content, widgets) are identical everywhere.
+
+6. REGULATED / THIRD-PARTY MATERIAL
+Not applicable. The app is not in a regulated industry and contains no protected third-party material. The religious texts (Quran verses, hadiths with their classical source references, adhkar and the Names of Allah) are public-domain religious texts; the short explanations and all designs were written for this app.
 ```
 
 ---

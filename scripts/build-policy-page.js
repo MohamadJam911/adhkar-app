@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // ==========================================
-// 📄 صفحة سياسة الخصوصية وبنود الاستخدام العامة (للمتاجر)
+// Public privacy policy and terms page (for the stores)
 // ==========================================
-// بيولّد docs/privacy-policy.html من نفس النص المعروض جوا التطبيق
-// (src/data/privacyPolicy.ts و src/data/termsOfService.ts) — فالصفحة
-// العامة والتطبيق ما بيختلفوا أبداً. شغّله بعد أي تعديل على النصين:
+// Generates docs/privacy-policy.html from the same text shown in the app
+// (src/data/privacyPolicy.ts and src/data/termsOfService.ts), so the public
+// page and the app never differ. Run it after editing either text:
 //   node scripts/build-policy-page.js
-// المجلد docs/ جاهز لـGitHub Pages (Settings → Pages → Branch: main، Folder: /docs).
+// docs/ is served by GitHub Pages (Settings → Pages → Branch: main, Folder: /docs).
 
 const fs = require('fs');
 const path = require('path');
@@ -22,7 +22,7 @@ function readTemplate(file, name) {
 
 const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-// نص عادي → HTML: "1. عنوان" = عنوان فرعي، "* بند" = قائمة، والباقي فقرات
+// Plain text → HTML: "1. Title" = subheading, "* item" = list item, everything else = paragraphs
 function toHtml(text) {
   const out = [];
   let list = [];
@@ -111,7 +111,7 @@ ${terms}
 const outDir = path.join(ROOT, 'docs');
 fs.mkdirSync(outDir, { recursive: true });
 fs.writeFileSync(path.join(outDir, 'privacy-policy.html'), page, 'utf8');
-// صفحة رئيسية بسيطة بتحوّل لسياسة الخصوصية (رابط أقصر للمتاجر)
+// Minimal index page that redirects to the privacy policy (a shorter link for the stores)
 fs.writeFileSync(
   path.join(outDir, 'index.html'),
   '<!DOCTYPE html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=privacy-policy.html"><title>مسرى المسلم</title><a href="privacy-policy.html">سياسة الخصوصية</a>\n',

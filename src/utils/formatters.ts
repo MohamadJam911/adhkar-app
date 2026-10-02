@@ -20,14 +20,13 @@ const toEasternArabicNumerals = (text: string | number) => {
 };
 
 // ==========================================
-// 🌍 ترجمة اسم الموقع الجغرافي (المدينة/الدولة) إلى العربية
+// Arabic names for reverse-geocoded places (city / country)
 // ==========================================
-// ملاحظة هامة: خدمة تحديد الموقع العكسي (reverse geocoding) في الجهاز تُعيد
-// الأسماء غالباً بالإنجليزية بغض النظر عن لغة التطبيق، ولا توجد وسيلة أوفلاين
-// لضمان ترجمة كل مكان في العالم. لذلك نعتمد قاموساً يغطي فلسطين والدول
-// المجاورة والوجهات الأكثر شيوعاً بين المستخدمين، ونعرض اسم الدولة العربي
-// فقط إن لم نجد اسم المدينة (بدل عرض نص إنجليزي مختلط مع العربي). يمكن
-// توسيع هذين القاموسين بسهولة لاحقاً حسب ملاحظات المستخدمين الفعليين.
+// Reverse geocoding usually returns English names regardless of the app
+// language, and there is no offline way to translate every place. So a
+// dictionary covers Palestine, neighbouring countries and common
+// destinations; if the city is unknown, only the Arabic country name is shown
+// rather than mixing English into Arabic text.
 const ARABIC_COUNTRY_NAMES: { [isoCode: string]: string } = {
   PS: 'فلسطين', IL: 'فلسطين', JO: 'الأردن', EG: 'مصر', SA: 'السعودية',
   AE: 'الإمارات', QA: 'قطر', KW: 'الكويت', BH: 'البحرين', OM: 'عُمان',
@@ -80,7 +79,7 @@ const ARABIC_CITY_NAMES: { [englishName: string]: string } = {
   'ashdod': 'أسدود', 'isdud': 'أسدود', 'esdud': 'أسدود',
   'caesarea': 'قيسارية', 'qisarya': 'قيسارية', 'qaysariyya': 'قيسارية',
 
-  // قطاع غزة
+  // Gaza Strip
   'khan yunis': 'خان يونس', 'khan younis': 'خان يونس',
   'rafah': 'رفح',
   'deir al-balah': 'دير البلح',
@@ -96,7 +95,7 @@ const ARABIC_CITY_NAMES: { [englishName: string]: string } = {
   'al-maghazi': 'المغازي', 'maghazi': 'المغازي',
   'al-nuseirat': 'النصيرات', 'nuseirat': 'النصيرات',
 
-  // مدن وبلدات وقرى الضفة الغربية ومحيط القدس
+  // West Bank cities, towns and villages, and the Jerusalem area
   'al-bireh': 'البيرة', 'el-bireh': 'البيرة',
   'beitunia': 'بيتونيا', 'bitunya': 'بيتونيا',
   'birzeit': 'بيرزيت', 'bir zeit': 'بيرزيت',
@@ -173,7 +172,7 @@ const ARABIC_CITY_NAMES: { [englishName: string]: string } = {
   'biddu': 'بدو',
   'qatanna': 'قطنة',
 
-  // قرى وبلدات الداخل (المثلث ووادي عارة)
+  // Towns in the Triangle and Wadi Ara
   'jaljulia': 'جلجولية', 'jaljulya': 'جلجولية',
   'kafr bara': 'كفر برا',
   'zemer': 'زيمر',
@@ -188,7 +187,7 @@ const ARABIC_CITY_NAMES: { [englishName: string]: string } = {
   'ein al-sahla': 'عين السهلة',
   'khor saqr': 'خور صقر',
 
-  // قرى وبلدات الجليل والساحل والكرمل
+  // Galilee, coast and Carmel
   'fureidis': 'الفريديس', 'al-fureidis': 'الفريديس',
   'kafr yasif': 'كفر ياسيف',
   'abu snan': 'أبو سنان',
@@ -225,7 +224,7 @@ const ARABIC_CITY_NAMES: { [englishName: string]: string } = {
   'ein rafa': 'عين رافة',
   'ein naqquba': 'عين نقوبا',
 
-  // قرى وبلدات النقب
+  // Naqab (Negev)
   'tel as-sabi': 'تل السبع', 'tel sheva': 'تل السبع',
   'shaqib al-salam': 'شقيب السلام', 'segev shalom': 'شقيب السلام',
   'ararat an-naqab': 'عرعرة النقب', "ar'arat an-naqab": 'عرعرة النقب',
@@ -235,7 +234,7 @@ const ARABIC_CITY_NAMES: { [englishName: string]: string } = {
   'drijat': 'الدريجات',
   'umm batin': 'أم بطين',
 
-  // أبرز القرى والبلدات الفلسطينية المهجرة والتاريخية
+  // Main depopulated and historical Palestinian villages
   'saffuriya': 'صفورية',
   'hittin': 'حطين',
   'lubya': 'لوبيا',
@@ -274,9 +273,9 @@ const ARABIC_CITY_NAMES: { [englishName: string]: string } = {
 const getArabicLocationLabel = (reverseResult: any): string => {
   if (!reverseResult) return 'موقعك الحالي';
 
-  // على أندرويد، خدمة تحديد الموقع العكسي بترجع أحياناً حقل "city" فاضي حتى
-  // لو الموقع معروف (عكس آيفون يلي بيرجعه أغلب الأحيان) — لهيك منجرب كمان
-  // "subregion" و"district" و"name" كبدائل قبل ما نستسلم ونعرض اسم الدولة بس.
+  // On Android, reverse geocoding sometimes returns an empty "city" even for
+  // a known location (iOS usually fills it), so subregion, district and name
+  // are tried before falling back to the country alone.
   const rawCity = (
     reverseResult.city ||
     reverseResult.subregion ||
@@ -292,14 +291,13 @@ const getArabicLocationLabel = (reverseResult: any): string => {
   if (arabicCity && arabicCountry) return `${arabicCity} / ${arabicCountry}`;
   if (arabicCity) return arabicCity;
 
-  // لقينا اسم مدينة بس مش موجود بقاموس الترجمة عنّا (مكان أقل شيوعاً) — أفضل
-  // نعرضه زي ما هو (بالإنجليزي غالباً) مع اسم الدولة، من إننا نتجاهله كلياً
-  // ونعرض اسم الدولة بس، لأنه هيك المستخدم بيضل عارف مدينته الفعلية.
+  // A city name that is not in the dictionary (a less common place): show it
+  // as is (usually English) with the country, so users still see their real city.
   if (rawCity && arabicCountry) return `${rawCity} / ${arabicCountry}`;
   if (rawCity) return rawCity;
   if (arabicCountry) return arabicCountry;
 
-  // لم نجد ولا اسم مدينة ولا اسم دولة: نعرض عبارة عامة بدل نص أجنبي مختلط
+  // Neither city nor country: a generic phrase instead of mixed foreign text
   return 'موقعك الحالي';
 };
 

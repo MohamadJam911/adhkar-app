@@ -11,7 +11,7 @@ function SettingsScreen({ hapticEnabled, setHapticEnabled, fontSize, setFontSize
   const { isDarkMode, themeMode, setThemeMode } = useContext(ThemeContext);
   const themeColors = isDarkMode ? heritageDarkTheme : heritageLightTheme;
 
-  // parallax: بيحرّك نقش الخلفية مع التمرير (خيار الخلفية ٣)
+  // Parallax: moves the background pattern with scrolling (background option 'girih')
   const bgScroll = useBackgroundScroll();
 
   return (
@@ -19,7 +19,7 @@ function SettingsScreen({ hapticEnabled, setHapticEnabled, fontSize, setFontSize
       <Animated.ScrollView entering={FadeIn.duration(400)} contentContainerStyle={{ padding: 15 }} onScroll={bgScroll} scrollEventThrottle={16}>
         <HeritageArchBanner title="الإعدادات والتفضيلات" textColor={themeColors.text.color} isDarkMode={isDarkMode} />
         
-        {/* اختيار المظهر (فاتح / داكن / تلقائي) */}
+        {/* Appearance (light / dark / automatic) */}
         <View style={[styles.settingRowColumn, themeColors.card]}>
           <Text style={[styles.settingLabel, themeColors.text, { marginBottom: 12, fontSize: fontSize - 2, textAlign: 'right' }]}>المظهر</Text>
           <View style={styles.segmentedButtonsRow}>
@@ -50,7 +50,7 @@ function SettingsScreen({ hapticEnabled, setHapticEnabled, fontSize, setFontSize
           </View>
         </View>
 
-        {/* العنوان يمين والمفتاح يسار (ترتيب عربي) */}
+        {/* Title on the right, switch on the left (Arabic layout) */}
         <View style={[styles.settingRow, themeColors.card]}>
           <Switch value={hapticEnabled} onValueChange={setHapticEnabled} />
           <Text style={[styles.settingLabel, themeColors.text, { fontSize: fontSize - 2, textAlign: 'right' }]}>الاهتزاز اللمسي</Text>
@@ -66,7 +66,7 @@ function SettingsScreen({ hapticEnabled, setHapticEnabled, fontSize, setFontSize
           </View>
         </View>
 
-        {/* 👇 الزر التفاعلي لسياسة الخصوصية وبنود الاستخدام */}
+        {/* Privacy policy and terms */}
         <TouchableOpacity 
           style={[styles.settingRow, themeColors.card, { paddingVertical: 18 }]} 
           onPress={() => navigation.navigate('PrivacyPolicy', { fontSize })}
@@ -79,7 +79,7 @@ function SettingsScreen({ hapticEnabled, setHapticEnabled, fontSize, setFontSize
           </View>
         </TouchableOpacity>
 
-        {/* 👇 زر التنقل لشاشة "عن التطبيق" الجديدة */}
+        {/* About screen */}
         <TouchableOpacity
           style={[styles.settingRow, themeColors.card, { paddingVertical: 18, marginTop: 12 }]}
           onPress={() => navigation.navigate('AboutScreen', { fontSize })}

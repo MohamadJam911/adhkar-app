@@ -9,12 +9,11 @@ import { GirihWall, useBackgroundScroll } from './GirihWall';
 export { useBackgroundScroll };
 
 // ==========================================
-// 🕌 خلفية "الفناء المضيء" (BACKGROUND_STYLE = 'courtyard'):
-//   • تدرّج عمودي ناعم (أفتح فوق، أغمق تحت) + ضوء دافي نازل من الأعلى
-//   • نقش دوائر متداخلة خافت — نفس نقش لافتة العنوان، فالتطبيق كله بلغة
-//     بصرية وحدة — بيتلاشى تدريجياً لتحت (ملمس بيتحسّ أكتر ما بينشاف)
-//   • قوس محراب كبير خافت بأعلى الشاشة بيأطّر البسملة والساعة
-// ثابتة ورا المحتوى (المحتوى بيتمرّر فوقها).
+// "Courtyard" background (BACKGROUND_STYLE = 'courtyard'):
+//   • a soft vertical gradient with warm light falling from the top
+//   • a faint interlocking-circles pattern (same as the title banner) that fades out downwards
+//   • a large, faint mihrab arch framing the top of the screen
+// Fixed behind the content, which scrolls over it.
 // ==========================================
 const CourtyardWall = ({ isDarkMode, children }: { isDarkMode: boolean; children: React.ReactNode }) => {
   const { width: W } = useWindowDimensions();
@@ -27,9 +26,8 @@ const CourtyardWall = ({ isDarkMode, children }: { isDarkMode: boolean; children
   const lightColor = isDarkMode ? '#E5B279' : '#FFFFFF';
   const lightOpacity = isDarkMode ? 0.1 : 0.6;
 
-  // قوس محراب مدبّب: جانبين عموديين، رأس مدبّب ناعم بالنص. عريض لدرجة إنه
-  // جانبيه بيمشوا بالهامش الضيّق (15) بين البطاقات وحافة الشاشة — متل باب
-  // بيأطّر البطاقات — بدل ما يختفوا ورا البطاقات.
+  // Pointed mihrab arch. Wide enough for its sides to run in the 15px gutter
+  // between the cards and the screen edge, framing the cards like a doorway.
   const archPath = (inset: number) => {
     const aw = W - 12 - inset * 2;
     const x0 = (W - aw) / 2;
@@ -51,7 +49,7 @@ const CourtyardWall = ({ isDarkMode, children }: { isDarkMode: boolean; children
               ))}
               <Circle cx="18" cy="18" r="1.4" fill={latticeColor} />
             </Pattern>
-            {/* تلاشي عمودي: النقش والقوس واضحين فوق وبيختفوا لتحت */}
+            {/* Vertical fade: pattern and arch are visible at the top and vanish downwards */}
             <SvgLinearGradient id="courtyardFade" x1="0" y1="0" x2="0" y2="1">
               <Stop offset="0" stopColor="#FFFFFF" stopOpacity={1} />
               <Stop offset="0.45" stopColor="#FFFFFF" stopOpacity={0.55} />
@@ -79,14 +77,14 @@ const CourtyardWall = ({ isDarkMode, children }: { isDarkMode: boolean; children
   );
 };
 
-// الخلفية حسب الخيار بـsrc/theme/backgroundStyle.ts (١ classic، ٢ courtyard، ٣ girih)
+// Background chosen in src/theme/backgroundStyle.ts ('classic' | 'courtyard' | 'girih')
 const ExactImagePatternWall = ({ isDarkMode, children }: { isDarkMode: boolean; children: React.ReactNode }) => {
   if (BACKGROUND_STYLE === 'girih') return <GirihWall isDarkMode={isDarkMode}>{children}</GirihWall>;
   if (BACKGROUND_STYLE === 'courtyard') return <CourtyardWall isDarkMode={isDarkMode}>{children}</CourtyardWall>;
   return <ClassicPatternWall isDarkMode={isDarkMode}>{children}</ClassicPatternWall>;
 };
 
-// الخلفية السابقة (شبكة معينات ودوائر) — محفوظة كما هي لـBACKGROUND_STYLE = 'classic'
+// Original background (diamond and circle grid), kept for BACKGROUND_STYLE = 'classic'
 const ClassicPatternWall = ({ isDarkMode, children }: { isDarkMode: boolean, children: React.ReactNode }) => {
   const gradientColors = isDarkMode
     ? ['#201C17', '#14110E', '#0B0907'] as const
@@ -114,17 +112,16 @@ const ClassicPatternWall = ({ isDarkMode, children }: { isDarkMode: boolean, chi
 };
 
 // ==========================================
-// 🕌 لافتة عنوان الشاشة (بسم الله، مواقيت الصلاة والقبلة، …):
-//   • توهّج ذهبي ناعم خلف العنوان (كأنه منوّر من جوّا)
-//   • نقش دوائر متداخلة (بتكوّن بتلات) بدل المعينات البسيطة
-//   • إطار ذهبي داخلي رفيع بيتبع انحناء القوس (إطار مزدوج متل المخطوطات)
-//   • تاج وردة ذهبية صغيرة بأعلى القوس
-//   • زخرفتين حلزونيتين بتأطّروا العنوان من الجهتين (متل ﴿ ﴾)
+// Screen title banner (Basmala, Prayer Times & Qibla, …):
+//   • soft gold glow behind the title
+//   • interlocking-circles (petal) pattern
+//   • thin inner gold frame following the arch, like a manuscript double frame
+//   • small rosette crest on top and two scrolls framing the title like ﴿ ﴾
 // ==========================================
 const BANNER_TOP_R = 30;
 const BANNER_BOTTOM_R = 12;
 
-/** مسار مستطيل بزوايا علوية/سفلية مختلفة، مُزاح للداخل بـinset */
+/** Rectangle path with different top/bottom corner radii, inset by `inset`. */
 const bannerFramePath = (w: number, h: number, inset: number) => {
   const t = BANNER_TOP_R - inset;
   const b = Math.max(BANNER_BOTTOM_R - inset, 2);
@@ -146,7 +143,7 @@ const bannerFramePath = (w: number, h: number, inset: number) => {
   ].join(' ');
 };
 
-/** زخرفة حلزونية مع ورقة — مفتوحة باتجاه العنوان */
+/** Scroll with a leaf, opening towards the title. */
 const TitleScroll = ({ color, flip }: { color: string; flip?: boolean }) => (
   <View style={{ width: 20, height: 26, transform: flip ? [{ scaleX: -1 }] : undefined }} pointerEvents="none">
     <Svg width="100%" height="100%" viewBox="0 0 22 28">
@@ -158,7 +155,7 @@ const TitleScroll = ({ color, flip }: { color: string; flip?: boolean }) => (
   </View>
 );
 
-/** تاج وردة صغيرة بأعلى القوس */
+/** Small rosette crest on top of the arch. */
 const BannerCrest = ({ color, bg }: { color: string; bg: string }) => (
   <Svg width={22} height={14} viewBox="0 0 22 14">
     <Circle cx={11} cy={7} r={6.5} fill={bg} />
@@ -242,27 +239,14 @@ const SeniorBackArrow = ({ onPress, isDarkMode }: { onPress: () => void, isDarkM
 };
 
 // ==========================================
-// ✅ مربع اختيار (Checkbox) ديناميكي حسب المظهر الحالي
-// ==========================================
-// بدل الاعتماد على لون ثابت (#D4A373) لكل المظاهر، ولوجود نص "✓" شفاف
-// بشكل دائم خلف المربع (وهو ما قد يظهر كمربع أسود على بعض الأجهزة بسبب
-// طريقة عرض بعض الخطوط لرمز الشيك)، أصبح إطار المربع ولون التعبئة يعتمدان
-// على لون التمييز (accent) الخاص بالمظهر الحالي، ولا نعرض نص الشيك أساساً
-// إلا عند التفعيل.
-// ==========================================
-// 📿 زخرفة داخلية لدوائر التسبيح الذهبية: حلقة منقّطة + 8 "حبّات" ماسية
-// صغيرة تلف حوالين الدائرة (تيمّن بحبات السبحة نفسها) وحلقة داخلية خفيفة
-// إضافية — كلها بلون أبيض شفاف خفيف فوق التدرّج الذهبي، فبتظهر كنقش محفور
-// بسيط بدون ما تأثر على وضوح الرقم والنص بالنص. مستخدمة كطبقة خلفية داخل
-// دوائر التسبيح (خلف الأرقام)، وviewBox نسبي (100x100) حتى تتأقلم تلقائياً
-// مع أي حجم دائرة (كبيرة بالسبحة الرقمية، أصغر بالذكر السريع بالهوم).
-// مسبحة كاملة من ٣٣ حبّة (عدد حبّات السبحة التقليدية) حوالين العداد: كل
-// ١١ حبّة في حبّة فاصلة أكبر (متل المسبحة الحقيقية)، وحبّة الإمام المستطيلة
-// بالأعلى مع خيطها. خيط رفيع بيربط الحبّات، ودائرة داخلية ناعمة بتأطّر الرقم.
+// Misbaha ring drawn around the tasbih counter: 33 beads (a traditional
+// misbaha) with a larger marker bead every 11, the rectangular "imam" bead
+// on top with its thread, and a soft inner circle framing the number.
+// Relative viewBox (100×100) so it scales to any counter size.
 const TASBIH_BEAD_COUNT = 33;
 const TASBIH_RING_RADIUS = 42;
 const TASBIH_BEADS = Array.from({ length: TASBIH_BEAD_COUNT }, (_, i) => {
-  // الحبّات موزّعة بالتساوي، مع ترك فراغ بالأعلى لحبّة الإمام
+  // Beads are evenly spaced, leaving a gap at the top for the imam bead
   const gapDeg = 14;
   const angleDeg = -90 + gapDeg / 2 + ((360 - gapDeg) / (TASBIH_BEAD_COUNT - 1)) * i;
   const a = (angleDeg * Math.PI) / 180;
@@ -272,9 +256,9 @@ const TASBIH_BEADS = Array.from({ length: TASBIH_BEAD_COUNT }, (_, i) => {
 
 const TasbihCircleOrnament = () => (
   <Svg width="100%" height="100%" viewBox="0 0 100 100">
-    {/* الخيط */}
+    {/* Thread */}
     <Circle cx="50" cy="50" r={TASBIH_RING_RADIUS} stroke="rgba(255,255,255,0.28)" strokeWidth="0.6" fill="none" />
-    {/* الحبّات */}
+    {/* Beads */}
     {TASBIH_BEADS.map((b, i) => (
       <Circle
         key={i}
@@ -284,20 +268,17 @@ const TasbihCircleOrnament = () => (
         fill={b.isSeparator ? 'rgba(255,255,255,0.62)' : 'rgba(255,255,255,0.46)'}
       />
     ))}
-    {/* حبّة الإمام (مستطيلة) بالأعلى مع عقدة صغيرة */}
+    {/* Rectangular imam bead with a small knot */}
     <Path d="M47.9 3.2 h4.2 l-0.6 6.4 h-3 z" fill="rgba(255,255,255,0.6)" />
     <Circle cx="50" cy="10.9" r="1.1" fill="rgba(255,255,255,0.6)" />
-    {/* دائرة داخلية ناعمة بتأطّر الرقم */}
+    {/* Soft inner circle framing the number */}
     <Circle cx="50" cy="50" r="34" stroke="rgba(255,255,255,0.2)" strokeWidth="0.7" fill="none" />
   </Svg>
 );
 
 // ==========================================
-// 🕌 زخرفة زاوية بسيطة للخانات الرئيسية بالصفحة الرئيسية (بطاقة الآية، الحديث،
-// اسم الله، الذكر السريع): مجموعة معينات صغيرة متدرّجة الحجم والشفافية —
-// تلاشي تدريجي بعيداً عن الزاوية — بنفس لون التمييز الذهبي المستخدم أصلاً
-// بحدود البطاقات (#D4A373)، محصورة بزاوية وحدة بس (يسار-تحت) وبمساحة صغيرة
-// حتى ما تملا البطاقة أو تأثر على وضوح النص. غير تفاعلية (pointerEvents none).
+// Small corner ornament for Home cards: diamonds fading away from the
+// bottom-left corner, in the card border gold. Non-interactive.
 const CardCornerOrnament = ({ color = '#D4A373' }: { color?: string }) => (
   <View style={{ position: 'absolute', bottom: 6, left: 6, width: 46, height: 46 }} pointerEvents="none">
     <Svg width="100%" height="100%" viewBox="0 0 60 60">
@@ -310,9 +291,8 @@ const CardCornerOrnament = ({ color = '#D4A373' }: { color?: string }) => (
 );
 
 // ==========================================
-// ✨ خط فاصل ذهبي كامل العرض (تدرّج شفاف-ذهبي-شفاف): يُستخدم أسفل نص
-// "اضغط لآية/حديث/اسم آخر" في بطاقات الآية والحديث واسم الله، حتى يفصل
-// بصرياً بين محتوى البطاقة ونص التلميح بلمسة ذهبية أنيقة وخفيفة.
+// Full-width gold divider (transparent → gold → transparent) separating a
+// card's content from its "tap for another…" hint.
 const GoldenDivider = ({ style }: { style?: any }) => (
   <LinearGradient
     colors={['transparent', '#D4A373', 'transparent']}
@@ -323,8 +303,7 @@ const GoldenDivider = ({ style }: { style?: any }) => (
 );
 
 // ==========================================
-// 🌟 مساعد لرسم نجمة ثمانية الرؤوس (نمط زخرفي عثماني كلاسيكي) كمسار SVG
-// بإحداثيات مركز ونصف قطر خارجي/داخلي — تُستخدم في زخرفة خانة الساعة والتاريخ.
+// SVG path for an eight-point star, from a centre and outer/inner radii.
 const buildStarPath = (cx: number, cy: number, rOuter: number, rInner: number, spikes: number = 8) => {
   let path = '';
   const step = Math.PI / spikes;
@@ -346,10 +325,8 @@ const OttomanCornerStar = ({ color = '#D4A373', opacity = 0.3 }: { color?: strin
 );
 
 // ==========================================
-// 🕌 زخرفة عثمانية مميزة لخانة الساعة والتاريخ في الصفحة الرئيسية: أربع
-// نجمات ثمانية الرؤوس صغيرة في زوايا البطاقة (أكبر وأوضح بالأعلى، أخف
-// بالأسفل) — طبقة خلفية غير تفاعلية بلون التمييز الذهبي وبشفافية خفيفة
-// جداً حتى ما تأثر على وضوح الوقت والتاريخ.
+// Ottoman-style ornament for the clock card: four eight-point stars in the
+// corners (stronger at the top), very faint so the time stays readable.
 const OttomanHeaderOrnament = ({ color = '#D4A373' }: { color?: string }) => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
     <View style={{ position: 'absolute', top: 8, left: 8, width: 22, height: 22 }}>
@@ -367,8 +344,7 @@ const OttomanHeaderOrnament = ({ color = '#D4A373' }: { color?: string }) => (
   </View>
 );
 
-// فاصل زخرفي صغير (خط - معين - خط) بين الوقت والتاريخ داخل خانة الساعة،
-// يمنحها طابعاً مميزاً عن باقي الخانات.
+// Small line–diamond–line divider between the time and the date in the clock card.
 const OttomanFlourishDivider = ({ color = '#D4A373' }: { color?: string }) => (
   <View style={{ flexDirection: 'row', alignItems: 'center', width: '60%', marginVertical: 4 }}>
     <View style={{ flex: 1, height: 1, backgroundColor: color, opacity: 0.35 }} />
@@ -378,8 +354,7 @@ const OttomanFlourishDivider = ({ color = '#D4A373' }: { color?: string }) => (
 );
 
 // ==========================================
-// 🌿 زخرفة خفيفة صغيرة تحت عناوين أقسام مكتبة الأذكار (أذكار الصباح، المساء...):
-// خط قصير + معين صغير محاذيين لجهة العنوان (يمين)، بلمسة ذهبية بسيطة وغير مزعجة.
+// Small underline (short line + diamond) for section titles in the adhkar library.
 const TitleFlourish = ({ color = '#D4A373' }: { color?: string }) => (
   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 4, gap: 4 }}>
     <View style={{ width: 14, height: 1, backgroundColor: color, opacity: 0.4 }} />
@@ -388,13 +363,13 @@ const TitleFlourish = ({ color = '#D4A373' }: { color?: string }) => (
 );
 
 // ==========================================
-// 🏮 زخارف البطاقات الخاصة — كل بطاقة بالصفحة الرئيسية عندها رمز مرسوم
-// بخط ذهبي رفيع يعبّر عن معناها (بدل المعينات والنجوم المتشابهة):
-//   quran   ← مصحف مفتوح على رحل، مع إشعاع نور خفيف
-//   hadith  ← قلم قصب ومحبرة: كلام النبي ﷺ المكتوب والمروي
-//   dhikr   ← مسبحة مسدولة بالزاوية مع شرّابتها
-//   names   ← شمسة: الوردة المشعّة اللي بتزيّن أسماء الله بالمصاحف المذهّبة
-// بالزاوية اليسرى السفلى، شفافية خفيفة، وغير تفاعلية (pointerEvents none).
+// Card motifs: each Home card gets a thin gold line drawing that matches
+// its content instead of generic stars:
+//   quran   ← an open mushaf on a stand, with a soft glow
+//   hadith  ← a reed pen and inkwell
+//   dhikr   ← a misbaha hanging in the corner with its tassel
+//   names   ← a shamsa, the radiant rosette of illuminated manuscripts
+// Low opacity and non-interactive.
 // ==========================================
 export type CardMotifVariant = 'quran' | 'hadith' | 'dhikr' | 'names';
 
@@ -402,42 +377,42 @@ const MOTIF_STROKE = { fill: 'none', strokeWidth: 1.6, strokeLinecap: 'round' as
 
 const QuranMotif = ({ color }: { color: string }) => (
   <G {...MOTIF_STROKE} stroke={color}>
-    {/* إشعاع نور فوق المصحف */}
+    {/* Glow above the mushaf */}
     <Path d="M32 7v5M21.5 10l2.6 4M42.5 10l-2.6 4" strokeWidth={1.3} />
-    {/* الصفحتين */}
+    {/* Pages */}
     <Path d="M32 22C26 17 17 17 10 20v16c7-3 16-3 22 2z" fill={color} fillOpacity={0.12} />
     <Path d="M32 22c6-5 15-5 22-2v16c-7-3-16-3-22 2z" fill={color} fillOpacity={0.12} />
     <Path d="M32 22v16" />
-    {/* سطور النص */}
+    {/* Text lines */}
     <Path d="M14.5 25c4-1.3 9-1.3 13 .6M14.5 29.5c4-1.3 9-1.3 13 .6M36.5 25.6c4-1.9 9-1.9 13-.6M36.5 30.1c4-1.9 9-1.9 13-.6" strokeWidth={1} />
-    {/* الرحل */}
+    {/* Stand */}
     <Path d="M20 37l24 22M44 37L20 59M15 59.5h9M40 59.5h9" />
   </G>
 );
 
 const HadithMotif = ({ color }: { color: string }) => (
   <G {...MOTIF_STROKE} stroke={color}>
-    {/* المحبرة */}
+    {/* Inkwell */}
     <Path d="M8 50c0-5.5 20-5.5 20 0l-2 10H10z" fill={color} fillOpacity={0.14} />
     <Path d="M13 44.8V41h10v3.8M11.5 41h13" />
-    {/* قلم القصب */}
+    {/* Reed pen */}
     <Path d="M19 41L50 10l4 4-31 31z" fill={color} fillOpacity={0.12} />
     <Path d="M50 10l6-6.5L54 14M52.6 9.2l2.2-2.4" />
-    {/* أثر حبر منساب */}
+    {/* Ink trail */}
     <Path d="M32 58c6-5 12 3 20-3 3-2 5-1 6 1" strokeWidth={1.3} />
   </G>
 );
 
 const DhikrMotif = ({ color }: { color: string }) => {
-  // مسبحة حقيقية: حلقة حبّات مغلقة (متل ما بتنمسك من خيطها)، طرفيها بيلتقوا
-  // تحت عند حبّة الإمام المستطيلة، وتحتها عقدة وشرّابة متفرّعة. كل حبّة إلها
-  // لمعة صغيرة حتى تبين مدوّرة.
+  // A closed loop of beads whose ends meet at the rectangular imam bead,
+  // with a knot and a branching tassel below. Each bead has a small
+  // highlight so it reads as round.
   const cx = 32;
   const cy = 25;
   const r = 17;
-  const joinY = 45; // نقطة التقاء طرفي الخيط فوق حبّة الإمام
+  const joinY = 45;  // where the two ends of the thread meet above the imam bead
   const beads = Array.from({ length: 16 }, (_, i) => {
-    // من 112° لـ 428° (فراغ تحت حوالين 90° لنزول الخيط لحبّة الإمام)
+    // from 112° to 428°, leaving a gap around 90° for the thread down to the imam bead
     const deg = 112 + (316 / 15) * i;
     const a = (deg * Math.PI) / 180;
     return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
@@ -446,20 +421,20 @@ const DhikrMotif = ({ color }: { color: string }) => {
   const right = beads[beads.length - 1];
   return (
     <G {...MOTIF_STROKE} stroke={color}>
-      {/* الخيط */}
+      {/* Thread */}
       <Circle cx={cx} cy={cy} r={r} strokeWidth={0.8} strokeOpacity={0.7} />
       <Path d={`M${left.x.toFixed(1)} ${left.y.toFixed(1)}L${cx} ${joinY}M${right.x.toFixed(1)} ${right.y.toFixed(1)}L${cx} ${joinY}`} strokeWidth={0.9} />
-      {/* الحبّات مع لمعة */}
+      {/* Beads with highlights */}
       {beads.map((b, i) => (
         <G key={i}>
           <Circle cx={b.x} cy={b.y} r={2.6} fill={color} fillOpacity={0.4} strokeWidth={1} />
           <Circle cx={b.x - 0.8} cy={b.y - 0.8} r={0.7} fill={color} stroke="none" />
         </G>
       ))}
-      {/* حبّة الإمام + العقدة */}
+      {/* Imam bead and knot */}
       <Path d={`M${cx - 2.4} ${joinY}h4.8l-.9 7.5h-3z`} fill={color} fillOpacity={0.45} strokeWidth={1.1} />
       <Circle cx={cx} cy={joinY + 9} r={1.3} fill={color} stroke="none" />
-      {/* الشرّابة */}
+      {/* Tassel */}
       <Path
         d={`M${cx} ${joinY + 10}L${cx - 5} ${joinY + 18}M${cx} ${joinY + 10}L${cx - 2} ${joinY + 18.5}M${cx} ${joinY + 10}L${cx + 1} ${joinY + 18.5}M${cx} ${joinY + 10}L${cx + 4} ${joinY + 18}`}
         strokeWidth={1}
@@ -469,7 +444,7 @@ const DhikrMotif = ({ color }: { color: string }) => {
 };
 
 const NamesMotif = ({ color }: { color: string }) => {
-  // شمسة: حلقة منقّطة، ٢٤ شعاع متناوب الطول، ودائرتين متداخلتين بالقلب
+  // Shamsa: dotted ring, 24 alternating rays and two nested circles
   const cx = 30;
   const cy = 34;
   const rays = Array.from({ length: 24 }, (_, i) => {
@@ -489,10 +464,9 @@ const NamesMotif = ({ color }: { color: string }) => {
 };
 
 // placement:
-//   'corner' ← الزاوية اليسرى السفلى للبطاقة (الذكر السريع)
-//   'inline' ← عنصر عادي ضمن السطر (مش طبقة فوق المحتوى) — ببطاقتي الآية
-//              والحديث بينحط بنفس صف الخط الذهبي السفلي (MotifOnLine) فقاعدته
-//              بتقعد على الخط بالضبط وما بيتداخل مع أي نص
+//   'corner' ← bottom-left corner of the card (quick dhikr)
+//   'inline' ← a regular element in the layout, used by MotifOnLine so the
+//              motif sits exactly on the card's bottom gold line
 const CardMotif = ({
   variant,
   color = '#D4A373',
@@ -518,8 +492,8 @@ const CardMotif = ({
   );
 };
 
-// الرمز بأول الخط الذهبي السفلي: الرمز يسار والخط ممتد منه لليمين، وقاعدة
-// الرمز بمستوى الخط بالضبط — ما بيتخطّاه لتحت وما بيغطّي النص اللي فوقه.
+// Motif at the start of the bottom gold line: motif on the left, line extending
+// to the right, with the motif's base exactly on the line.
 const MotifOnLine = ({ variant, size = 36, style }: { variant: CardMotifVariant; size?: number; style?: any }) => (
   <View style={[{ flexDirection: 'row', alignItems: 'flex-end' }, style]}>
     <CardMotif variant={variant} placement="inline" size={size} />
@@ -527,11 +501,11 @@ const MotifOnLine = ({ variant, size = 36, style }: { variant: CardMotifVariant;
   </View>
 );
 
-// الشمسة كعنصر ضمن السطر (مش زخرفة خلفية) — بتحيط باسم الله الحسنى من
-// الجهتين، متل الوردات اللي بتأطّر الأسماء بالمخطوطات المذهّبة.
+// Inline shamsa used on both sides of a Name of Allah, like the rosettes
+// framing names in illuminated manuscripts.
 const ShamsaEmblem = ({ size = 30, color = '#D4A373', opacity = 0.75 }: { size?: number; color?: string; opacity?: number }) => (
   <View style={{ width: size, height: size, opacity }} pointerEvents="none">
-    {/* viewBox مقصوص على الشمسة نفسها (مركزها 30,34 ونصف قطرها 20.5) */}
+    {/* viewBox cropped to the shamsa itself (centre 30,34, radius 20.5) */}
     <Svg width="100%" height="100%" viewBox="8.5 12.5 43 43">
       <NamesMotif color={color} />
     </Svg>
@@ -539,9 +513,7 @@ const ShamsaEmblem = ({ size = 30, color = '#D4A373', opacity = 0.75 }: { size?:
 );
 
 // ==========================================
-// 🏮 زخرفة خانة الساعة والتاريخ: فانوسين معلّقين بالزاويتين العلويتين
-// (الوقت والليل ورمضان) وهلالين صغيرين بالسفليتين (الشهر الهجري) — بدل
-// النجوم الثمانية. خفيفة جداً حتى ما تأثر على وضوح الوقت والتاريخ.
+// Lantern and crescent line drawings for the clock card ornament.
 // ==========================================
 const Lantern = ({ color }: { color: string }) => (
   <Svg width="100%" height="100%" viewBox="0 0 30 44">
@@ -563,7 +535,7 @@ const Crescent = ({ color }: { color: string }) => (
   </Svg>
 );
 
-// فانوس واحد معلّق بالزاوية العلوية اليمنى، وهلال واحد بالزاوية السفلية اليسرى
+// Clock card ornament: one lantern in the top-right corner and one crescent in the bottom-left.
 const HeaderLanternOrnament = ({ color = '#D4A373' }: { color?: string }) => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
     <View style={{ position: 'absolute', top: 0, right: 14, width: 20, height: 30, opacity: 0.5 }}>

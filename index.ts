@@ -6,10 +6,10 @@ import { widgetTaskHandler } from './src/widgets/widgetTaskHandler';
 
 registerRootComponent(App);
 
-// بيسجل المعالج المسؤول عن رسم ويدجتس الشاشة الرئيسية لأندرويد، حتى لو
-// التطبيق نفسه مسكّر تماماً (WIDGET_ADDED و WIDGET_UPDATE بيشتغلوا بدون ما
-// يكون التطبيق مفتوح). أندرويد بس — ويدجت الآيفون مكتوب بـSwift
-// (targets/widget) وبياخد بياناته عبر src/widgets/ios/IosWidgetBridge.ts.
+// Registers the handler that renders the Android home-screen widgets, even when
+// the app is closed (WIDGET_ADDED and WIDGET_UPDATE run without the app open).
+// Android only — the iPhone widget is written in Swift (targets/widget) and gets
+// its data through src/widgets/ios/IosWidgetBridge.ts.
 if (Platform.OS === 'android') {
   registerWidgetTaskHandler(widgetTaskHandler);
 }

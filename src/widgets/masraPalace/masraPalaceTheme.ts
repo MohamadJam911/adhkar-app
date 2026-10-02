@@ -1,29 +1,27 @@
 // ==========================================
-// 🎨 هوية ويدجت "مسرى المسلم — القصر الزمردي" (MasraPalaceWidget)
+// Visual identity of the "Emerald Palace" Android widgets.
 // ==========================================
-// نفس هوية ألوان التطبيق كله: الأخضر الداكن ‎#12241F (أيقونة التطبيق، شاشة
-// البداية، الويدجتس القديمة) مع ‎#1B342C للبطاقات، والذهبي ‎#D4A373 (اللون
-// الذهبي الأساسي بكل شاشات التطبيق) مع درجاته الموجودة أصلاً بالمشروع
-// (‎#E5B279 أفتح، ‎#A47A45 / ‎#8A5E33 أغمق). الذهبي القديم (‎#D4AF37) كان
-// بارد ومايل للأصفر مقارنة بباقي التطبيق.
-// "as const" لازمة حتى تايبسكريبت يقبلها كـColorProp (شوف widgetTheme.ts).
+// Same palette as the rest of the app: dark green #12241F (icon, splash)
+// with #1B342C for cards, and the app's gold #D4A373 with its lighter
+// (#E5B279) and darker (#A47A45 / #8A5E33) shades.
+// `as const` is required so TypeScript accepts the values as ColorProp.
 
-// الذهبيات بمكان واحد — كل الـSVG تحت بياخد منها بدل ما نكرر أكواد hex
+// All gold shades in one place, used by every SVG below
 const GOLD = {
-  highlight: '#F4E0C2', // لمعة (أفتح نقطة بالشعار وحافة البطاقة)
-  light: '#E5B279', // نصوص ذهبية فاتحة (أرقام العدّاد)
-  pure: '#D4A373', // ذهبي التطبيق الأساسي
-  metallic: '#A47A45', // حدود وإطارات
-  deep: '#8A5E33', // ظلال وتدرّجات
+  highlight: '#F4E0C2',  // highlight (brightest point of the emblem and card edge)
+  light: '#E5B279',  // light gold text (countdown digits)
+  pure: '#D4A373',  // the app's primary gold
+  metallic: '#A47A45',  // borders and frames
+  deep: '#8A5E33',  // shadows and gradients
   dark: '#4A321B',
 } as const;
 
-// أخضر التطبيق
+// App greens
 const GREEN = {
   base: '#12241F',
   card: '#1B342C',
-  deep: '#0B1714', // أطراف الخلفية وقلب بطاقة الصلاة القادمة
-  silhouette: '#07100E', // ظل المسجد
+  deep: '#0B1714',  // background edges and the next-prayer card centre
+  silhouette: '#07100E',  // mosque silhouette
 } as const;
 
 export const PALACE_COLORS = {
@@ -38,7 +36,7 @@ export const PALACE_COLORS = {
   goldDark: GOLD.dark,
 
   ivory50: '#FFFFFF',
-  ivory100: '#F4EADF', // نفس لون النص الأساسي بالتطبيق
+  ivory100: '#F4EADF',  // same as the app's main text colour
   ivory200: '#E8DCCB',
   ivory300: '#C9B8A3',
 
@@ -51,8 +49,8 @@ export const PALACE_COLORS = {
   emblemRingBg: 'rgba(212, 163, 115, 0.12)',
 } as const;
 
-// زخرفة الزاوية من ملف الـHTML (viewBox 0-40) — مرسومة مرة وحدة ومنعكسة
-// رياضياً (scale سالب) لكل زاوية بدل ما نكتب أربع نسخ يدوياً.
+// Corner ornament (viewBox 0-40), drawn once and mirrored with negative
+// scales for each corner.
 function cornerOrnament(transform: string): string {
   return `<g transform="${transform}">
     <path d="M0,0 L20,0 C20,10 10,20 0,20 Z" fill="${GOLD.metallic}" opacity="0.3"/>
@@ -61,12 +59,12 @@ function cornerOrnament(transform: string): string {
   </g>`;
 }
 
-// نجمة ربع الحزب (Rub el Hizb) من ملف الـHTML — viewBox 0-24.
+// Rub el Hizb star, viewBox 0-24.
 const RUB_EL_HIZB_PATH =
   'M12 2L14.8 6.6L20 6.6L17.2 11.2L20 15.8L14.8 15.8L12 20.4L9.2 15.8L4 15.8L6.8 11.2L4 6.6L9.2 6.6Z';
 
-// نجمة صغيرة "بتكسر" خط الإطار بالنص (نفس تقنية bg-emerald-950 px-1.5
-// بالـCSS): مستطيل بلون الخلفية فوق الخط، والنجمة فوقه.
+// Small star that "breaks" the frame line in the middle: a rectangle in the
+// background colour over the line, with the star on top.
 function frameStar(cx: number, cy: number, cutColor: string): string {
   return `<rect x="${cx - 10}" y="${cy - 3}" width="20" height="6" fill="${cutColor}"/>
   <g transform="translate(${cx - 6.6},${cy - 6.2}) scale(0.55)">
@@ -78,28 +76,26 @@ function frameStar(cx: number, cy: number, cutColor: string): string {
 const round = (n: number) => Math.round(n * 10) / 10;
 
 // ==========================================
-// 🕌 الخلفية الكاملة — طبقة SVG وحدة بتجمع طبقات الـHTML الثلاث:
-//  ١) تدرّج زمردي شعاعي من الأعلى (radial-gradient ellipse_at_top)
-//  ٢) نقش أرابيسك هندسي خافت (نفس بلاطة الـ120px من الـHTML، مصغّرة)
-//  ٣) ظل قبة ومئذنتين بأسفل النص (نفس مسارات الـHTML)
-// + الإطار الذهبي المزدوج، زخارف الزوايا الأربع، ونجمتي أعلى/أسفل الإطار.
+// Full background as a single SVG layer:
+//  1) radial emerald gradient from the top
+//  2) faint geometric arabesque tile
+//  3) dome and minaret silhouette at the bottom
+// plus the double gold frame, the four corner ornaments and the frame stars.
 //
-// ⚠️ ليش دالة بالأبعاد مش ثابت؟ المكتبة بترسم الـSVG عبر AndroidSVG
-// (svg.renderToPicture()) — وإذا الـ<svg> ما فيه width/height، AndroidSVG
-// بيفترض مربّع 512×512 وبيتجاهل preserveAspectRatio، فالخلفية كانت
-// تطلع مربّع صغير بنص الويدجت. هون منرسمها بأبعاد الويدجت الفعلية (dp)
-// حتى تغطي كل الويدجت بالضبط، وكمان كل الزخارف (الزوايا، النجوم، القبة)
-// بتضل بنسبها الصحيحة بدل ما تنمطّ مع حجم الويدجت.
+// It is a function of the widget size because the library renders SVG with
+// AndroidSVG, which assumes 512×512 and ignores preserveAspectRatio when the
+// <svg> has no width/height — the background used to render as a small
+// square. Drawing at the real widget size (dp) covers the widget exactly and
+// keeps the ornaments in proportion.
 // ==========================================
 export function palaceBackgroundSvg(width: number, height: number): string {
   const W = Math.max(120, Math.round(width));
   const H = Math.max(80, Math.round(height));
   const cut = GREEN.card;
 
-  // ظل القبة: مسارات الـHTML الأصلية بمقياس موحّد، بأسفل النص — كبير
-  // وواضح. الرسمة الفعلية بتحتل بس x من 115 لـ385 (≈290 وحدة مع هامش) من
-  // صندوق الـ500، فمنكبّر على أساس هالعرض (لحد ٨٠٪ من الويدجت) مش الصندوق
-  // كله، ومنوسّطها على x=250. غامق مع خط ذهبي خفيف حتى يبان.
+  // Dome silhouette at the bottom centre. The drawing only spans x 115–385 of
+  // its 500-unit box, so it is scaled by that width (up to 80% of the widget)
+  // and centred on x=250. Dark fill with a faint gold outline.
   const mosqueScale = Math.min((W * 0.8) / 290, (H * 0.62) / 150);
   const mosqueX = round(W / 2 - 250 * mosqueScale);
   const mosqueY = round(H - 150 * mosqueScale);
@@ -149,20 +145,21 @@ export function palaceBackgroundSvg(width: number, height: number): string {
 }
 
 // ==========================================
-// 🔤 خطوط الويدجت — ملفات TTF بـassets/fonts/widget، مضمّنة بالـAPK عبر
-// إعدادات expo-font بـapp.json. مكتبة الويدجت بتدوّر بـassets/fonts/ على
-// ملف اسمه بيبدأ بـfontFamily، فالاسم هون = اسم الملف بدون الامتداد.
-// (إذا الخط مش موجود — مثلاً تحديث JS على نسخة قديمة — بترجع لخط النظام.)
+// Widget fonts: TTF files in assets/fonts/widget, bundled through the
+// expo-font config plugin in app.json. The widget library looks in
+// assets/fonts/ for a file starting with the fontFamily name.
+// (If a font is missing, e.g. a JS update on an older build, it falls back
+// to the system font.)
 // ==========================================
 export const PALACE_FONTS = {
-  calligraphy: 'WidgetAmiriBold', // "مسرى المسلم" واسم الصلاة القادمة
-  label: 'WidgetCairoBold', // أسماء الصلوات، الشارة، المدينة
-  body: 'WidgetCairoSemiBold', // الأوقات والتاريخ
-  timer: 'WidgetCinzelBold', // أرقام العدّاد
+  calligraphy: 'WidgetAmiriBold',  // app name and next-prayer name
+  label: 'WidgetCairoBold',  // prayer names, badge, city
+  body: 'WidgetCairoSemiBold',  // times and date
+  timer: 'WidgetCinzelBold',  // countdown digits
 } as const;
 
-// أيقونات الصلوات الخطّية — مسارات ملف الـHTML المرجعي حرفياً (بما فيها
-// هلال العشاء المفرّغ)، بلون ديناميكي لأنه SvgWidget بده لون صريح.
+// Line icons for each prayer, coloured explicitly because SvgWidget needs a
+// concrete colour (no currentColor).
 export type PalacePrayerIconKey = 'Fajr' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha';
 
 export function palacePrayerIconSvg(key: PalacePrayerIconKey, color: string): string {
@@ -183,11 +180,11 @@ export function palacePrayerIconSvg(key: PalacePrayerIconKey, color: string): st
   }
 }
 
-// بطاقة "أقرب صلاة" كقوس SVG: زوايا علوية كبيرة وسفلية أصغر، تدرّج أخضر
-// وحدّ ذهبي. مرسومة SVG لأنه مكتبة الويدجت ما بترسم الحدّ (border) لما
-// تختلف أنصاف أقطار الزوايا عن بعض. الأبعاد نفس أبعاد البطاقة بالضبط
-// (width/height) حتى AndroidSVG يرسمها بنسبتها الصحيحة بدون تمطيط.
-// مستطيل بزوايا علوية/سفلية مختلفة، مُزاح للداخل بمقدار inset
+// "Next prayer" card drawn as an SVG arch: large top corners, smaller
+// bottom ones, green gradient and gold border. Drawn as SVG because the
+// widget library cannot draw a border with non-uniform corner radii. Sized
+// to the card (width/height) so AndroidSVG keeps its proportions.
+// Rectangle with different top/bottom corner radii, inset by `inset`.
 function archPath(w: number, h: number, rt: number, rb: number, inset: number): string {
   const i = inset;
   const t = Math.max(rt - i, 1);
@@ -235,14 +232,12 @@ export function archCardSvg(width: number, height: number, topRadius: number, bo
   </svg>`;
 }
 
-// نجمة الفاصل الذهبي تحت اسم التطبيق (خماسية الرؤوس بالـHTML الأصلي).
+// Gold divider star under the app name.
 export function dividerStarSvg(color: string): string {
   return `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12,2 L14,9 L21,9 L15,14 L18,21 L12,17 L6,21 L9,14 L3,9 L10,9 Z" fill="${color}" opacity="0.9"/></svg>`;
 }
 
-// شعار قبة الصخرة — نفس رسمة domeOfRockEmblemSvg بـwidgetTheme.ts حرفياً،
-// بس بدرجات الذهب الخالص (نسخة خاصة بهاد الويدجت حتى ما نعدّل على الملف
-// المشترك مع الويدجتس القديمة).
+// Dome of the Rock emblem in pure gold shades.
 export function pureGoldDomeEmblemSvg(): string {
   return `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
     <defs>

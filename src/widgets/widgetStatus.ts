@@ -1,14 +1,10 @@
 // ==========================================
-// 📱 منطق حساب حالة الصلاة القادمة لأجل الويدجت (Android Home Screen Widget)
+// Next-prayer status shared by the app and the widgets
 // ==========================================
-// ملاحظة مهمة: هاد الملف نسخة مستقلة عن نفس المنطق الموجود جوا App.tsx
-// (دالتي formatArabicNumbers و getPrayerStatus). السبب إنه معالج الويدجت
-// (widgetTaskHandler) بيشتغل بشكل "headless" خارج شجرة الـ React الحية
-// للتطبيق (ممكن يشتغل والتطبيق مسكّر تماماً)، فما بنقدر نستورد هاي الدوال
-// من App.tsx مباشرة بأمان. لأنها دوال حسابية بحتة (pure) وما بتتغير كثير،
-// خليناها بملف مشترك صغير هون يقدر يستخدمه الملفين، وضل نفس المنطق بالظبط
-// المستخدم بصفحة مواقيت الصلاة، حتى ما يصير فرق (drift) بين اللي بيظهر
-// بالتطبيق واللي بيظهر بالويدجت.
+// The widget task handler runs headless, outside the app's React tree (even
+// with the app closed), so these pure helpers live in a small shared module
+// instead of a screen. The Prayer Times screen uses the same logic, so the
+// app and the widgets never drift apart.
 
 export type PrayerTimings = {
   Fajr: string;

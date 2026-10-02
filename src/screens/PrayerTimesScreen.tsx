@@ -17,11 +17,21 @@ import { PrayerSharePage, MonthlyImsakiyaSharePage } from '../components/SharePa
 import { formatArabicNumbers, getArabicLocationLabel, getSafeHijriDate } from '../utils/formatters';
 import { getCountdownText, getDuhaTimes, getPrayerStatus, calculateLastThirdOfNight, updateAndroidWidget, QIBLA_ALIGNED_COLOR, QIBLA_ALIGNED_TINT_18, QIBLA_ALIGNED_TINT_12, QIBLA_ALIGNED_TINT_60 } from '../utils/prayerLogic';
 import { logStat } from '../utils/statsLogger';
-import { PALESTINE_CITIES, DAHRI_TIMES, getDahriCityOffset, getPalestineDstOffset, addMinutesToTime } from '../data/dahriTimesData';
+import { PALESTINE_CITIES } from '../data/dahriTimesData';
 import { scheduleAppNotifications } from '../services/notificationService';
+import { PrayerTimesProvider, SELECTED_CITY_STORAGE_KEY } from '../services/PrayerTimesProvider';
+import {
+  computePrayerTimings,
+  describeTimesMethod,
+  resolveTimesMethod,
+  type PrayerPlace,
+  type TimesMethod,
+} from '../utils/prayerTimesEngine';
 
-// --- 2. PRAYER TIMES SCREEN ---
-/** هل أول حرف "قوي" (عربي أو لاتيني) بالنص عربي؟ (نفس قاعدة Unicode لاتجاه الفقرة) */
+/** Used when the location is unavailable and nothing is saved. */
+const JERUSALEM: PrayerPlace = { lat: 31.7683, lon: 35.2137 };
+
+/** Whether the first "strong" (Arabic or Latin) letter is Arabic — the Unicode paragraph-direction rule. */
 const startsWithArabic = (text: string): boolean => {
   const match = text.match(/[؀-ۿݐ-ݿࢠ-ࣿA-Za-zÀ-ɏ]/);
   return !!match && /[؀-ۿݐ-ݿࢠ-ࣿ]/.test(match[0]);
@@ -37,7 +47,8 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
   const [locationName, setLocationName] = useState<string>('جاري تحديد موقعك…');
   const [isAligned, setIsAligned] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [currentCoords, setCurrentCoords] = useState<{ lat: number; lon: number; dahriOffset: number } | null>(null);
+  const [timesMethod, setTimesMethod] = useState<TimesMethod | null>(null);
+  const methodLabels = describeTimesMethod(timesMethod);
 
   const [imsakiyaModalVisible, setImsakiyaModalVisible] = useState(false);
   const [monthlyTimesList, setMonthlyTimesList] = useState<any[]>([]);
@@ -77,12 +88,12 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
   }, []);
 
   // ==========================================
-  // 🧭 البوصلة شغّالة بس وهي شاشة القبلة ظاهرة فعلاً
+  // Compass runs only while the Qibla screen is visible
   // ==========================================
-  // التبويبات بتخلّي الشاشة "مركّبة" بالخلفية بعد ما تنتقل لتبويب تاني —
-  // فكانت الحسّاسات (ومعها اهتزاز محاذاة القبلة) تضل شغّالة بكل الشاشات،
-  // وحتى والتطبيق بالخلفية على أندرويد. هلأ بتشتغل بس لما الشاشة ظاهرة
-  // (isFocused) والتطبيق بالمقدّمة (AppState = active)، وبتنطفي فوراً غير هيك.
+  // Tabs keep screens mounted in the background, so the sensors (and the
+  // alignment haptics) used to keep running on every tab, and even in the
+  // background on Android. They now run only while the screen is focused and
+  // the app is active, and stop immediately otherwise.
   const isFocused = useIsFocused();
   const [appActive, setAppActive] = useState(AppState.currentState === 'active');
   useEffect(() => {
@@ -96,29 +107,22 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
     let cancelled = false;
 
     // ==========================================
-    // 🧭 مرشِّح تكميلي (Complementary Filter) لثبات اتجاه القبلة
+    // Complementary filter for a stable Qibla heading
     // ==========================================
-    // المشكلة الحقيقية: حساس المغناطيسية (Magnetometer) بطبيعته حساس جداً
-    // للتشويش المغناطيسي المحيط (لابتوب، سماعات، أسلاك، حديد بالمكتب أو
-    // الحائط، شواحن لاسلكية...)، وهاد التشويش بيغيّر قراءته حتى لو الهاتف
-    // نفسه ثابت 100% تماماً بمكانه. هاد تشويش فيزيائي حقيقي وما في أي تطبيق
-    // بالدنيا يقدر يلغيه بالكامل من طرف السوفتوير وحده.
+    // The magnetometer is very sensitive to nearby interference (laptops,
+    // speakers, cables, metal, wireless chargers), which moves its reading
+    // even when the phone is perfectly still — no software can remove that.
     //
-    // لكن نقدر نبني نظام "يعرف" هل الهاتف فعلاً استدار ولا لأ، بالاعتماد على
-    // حساس الجيروسكوب (Gyroscope) يلي بيقيس *سرعة دوران* الهاتف الفعلية
-    // مباشرة، ومش إله أي علاقة بالمغناطيسية إطلاقاً (مش متأثر بالتشويش
-    // المغناطيسي أبداً). الفكرة: بكل لحظة منثق بالجيروسكوب شبه بالكامل
-    // لتحديد الحركة اللحظية (لو الجيروسكوب قايل "صفر دوران"، المؤشر ما
-    // بيتحرك ولو المغناطيسية قالت غير هيك)، وبنفس الوقت منسمح بتصحيح بطيء
-    // جداً من المغناطيسية على مدى ثوانٍ حتى ما ننجرف بعيد عن الاتجاه الحقيقي
-    // (لأنه الجيروسكوب لحاله بينجرف مع الوقت لو اعتمدنا عليه بس). هاد بالضبط
-    // نفس المبدأ المستخدم ببوصلات الطيران وتطبيقات القبلة الاحترافية.
+    // The gyroscope measures the actual rotation rate and is unaffected by
+    // magnetic noise. So short-term movement comes almost entirely from the
+    // gyroscope (if it reports no rotation, the needle does not move), while
+    // the magnetic heading slowly corrects the result over a few seconds so
+    // the gyroscope's own drift never accumulates. This is the same principle
+    // used by aircraft heading indicators and dedicated Qibla apps.
     //
-    // ⚠️ ملاحظة تقنية مهمة: اتجاه دوران محور الجيروسكوب (z) ممكن يختلف
-    // بالإشارة بين أجهزة أندرويد المختلفة. إذا بعد التجربة صار المؤشر يدور
-    // بعكس الاتجاه الصحيح لما تلف الهاتف فعلياً، بدّل السطر
-    // "fusedRef.current = wrap360(fusedRef.current - deltaDeg)"
-    // تحت لـ "+ deltaDeg" بدل "- deltaDeg".
+    // Note: the sign of the gyroscope z-axis can differ between Android
+    // devices. If the needle turns the wrong way, change
+    // "fusedRef.current = wrap360(fusedRef.current - deltaDeg)" below to "+ deltaDeg".
     const fusedRef = { current: null as number | null };
     let lastGyroTime = Date.now();
 
@@ -130,9 +134,8 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
       return d;
     };
 
-    // تصحيح بطيء (٦٪ فقط من الفرق بكل قراءة مغناطيسية) نحو القراءة المطلقة،
-    // حتى نلغي الضجيج اللحظي لكن نضل ملتزمين بالاتجاه الصحيح على المدى
-    // المتوسط بدل ما ننجرف بعيد عنه كلياً.
+    // Slow correction (6% of the difference per magnetic reading) towards the
+    // absolute heading: removes instant noise but stays on the true heading.
     const applyAbsoluteCorrection = (rawHeading: number) => {
       if (fusedRef.current === null) {
         fusedRef.current = rawHeading;
@@ -148,7 +151,7 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
       const now = Date.now();
       const dt = (now - lastGyroTime) / 1000;
       lastGyroTime = now;
-      if (dt <= 0 || dt > 0.5) return; // تجاهل فجوات زمنية غير طبيعية (مثلاً بعد رجوع التطبيق من الخلفية)
+      if (dt <= 0 || dt > 0.5) return;  // ignore abnormal gaps (e.g. after returning from the background)
 
       const deltaDeg = gyroZ * (180 / Math.PI) * dt;
       fusedRef.current = wrap360(fusedRef.current - deltaDeg);
@@ -162,8 +165,8 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
     let latestAccel = { x: 0, y: 0, z: 1 };
 
     (async () => {
-      // الجيروسكوب فعّال دايماً على المنصتين — هو اللي بيخلي المؤشر ثابت
-      // فعلياً لما الهاتف ثابت، بغض النظر شو قالت المغناطيسية.
+      // The gyroscope is always on, on both platforms — it keeps the needle
+      // still when the phone is still, whatever the magnetometer says.
       try {
         Gyroscope.setUpdateInterval(60);
         gyroSubscription = Gyroscope.addListener(data => {
@@ -182,12 +185,10 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
         if (cancelled) headingSubscription?.remove?.();
       } catch (e) {
         if (cancelled) return;
-        // مسار احتياطي (بيصير غالباً على أندرويد لما ما يتوفر
-        // watchHeadingAsync): منحسب الاتجاه من المغناطيسية + التسارع معاً
-        // (تعويض الميلان / tilt compensation)، مش من المغناطيسية لوحدها متل
-        // ما كان بالكود القديم. بدون تعويض الميلان، أي إمالة بسيطة طبيعية
-        // بالهاتف وقت ما الشخص ماسكه بيده كانت تعطي انحراف كبير بالاتجاه ممكن
-        // يوصل لأكتر من ٤٥ درجة.
+        // Fallback (mostly on Android when watchHeadingAsync is unavailable):
+        // heading from magnetometer + accelerometer together (tilt
+        // compensation). Without it, the natural tilt of a hand-held phone
+        // could skew the heading by more than 45°.
         Accelerometer.setUpdateInterval(100);
         accelSubscription = Accelerometer.addListener(data => {
           latestAccel = data;
@@ -232,15 +233,14 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
 
   const initializeLiveLocation = async () => {
     try {
-      const savedCity = await AsyncStorage.getItem('@user_selected_city');
+      const savedCity = await AsyncStorage.getItem(SELECTED_CITY_STORAGE_KEY);
       if (savedCity) {
         const cityObj = JSON.parse(savedCity);
         if (cityObj.lat === null) {
           await fetchLiveGPSAndTimes(true);
         } else {
           setLocationName(cityObj.name);
-          applyDahriTimes(cityObj.lat, cityObj.lon, cityObj.dahriOffset);
-          calculateQibla(cityObj.lat, cityObj.lon);
+          applyPrayerTimes(cityObj);
         }
         return;
       }
@@ -250,58 +250,54 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
     }
   };
 
+  /** Falls back to the saved city, then Jerusalem, when GPS is unavailable. */
+  const applyFallbackLocation = async (message: string) => {
+    try {
+      const savedCity = await AsyncStorage.getItem(SELECTED_CITY_STORAGE_KEY);
+      const cityObj = savedCity ? JSON.parse(savedCity) : null;
+      if (cityObj && cityObj.lat !== null) {
+        setLocationName(cityObj.name + ' (الموقع المحفوظ)');
+        applyPrayerTimes(cityObj);
+        return;
+      }
+    } catch (e) {}
+    setLocationName(message);
+    applyPrayerTimes(JERUSALEM);
+  };
+
   const fetchLiveGPSAndTimes = async (isManualGPS: boolean) => {
     try {
       setLoading(true);
-      let { status } = await Location.requestForegroundPermissionsAsync();
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setLocationName('تعذّر الوصول إلى موقعك • سيتم استخدام القدس افتراضيًا');
-        applyDahriTimes(31.7683, 35.2137, 0);
-        calculateQibla(31.7683, 35.2137);
+        await applyFallbackLocation('تعذّر الوصول إلى موقعك • سيتم استخدام القدس افتراضيًا');
         return;
       }
 
-      let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       const { latitude, longitude } = location.coords;
 
-      let currentCityStr = 'موقعك الحالي';
-
+      let cityName = 'موقعك الحالي';
+      let countryCode: string | null = null;
       try {
-        let reverse = await Location.reverseGeocodeAsync({ latitude, longitude });
+        const reverse = await Location.reverseGeocodeAsync({ latitude, longitude });
         if (reverse && reverse.length > 0) {
-          currentCityStr = getArabicLocationLabel(reverse[0]);
+          cityName = getArabicLocationLabel(reverse[0]);
+          countryCode = reverse[0].isoCountryCode ?? null;
         }
       } catch (netError) {}
 
-      const calculatedOffset = getDahriCityOffset(latitude, longitude);
-      setLocationName(currentCityStr);
-      applyDahriTimes(latitude, longitude, calculatedOffset);
-      calculateQibla(latitude, longitude);
-
+      const place: PrayerPlace = { lat: latitude, lon: longitude, countryCode };
+      // Saved before computing, so widgets and notifications use the same place.
+      await PrayerTimesProvider.rememberGpsLocation(place, cityName);
       if (isManualGPS) {
-        await AsyncStorage.setItem('@user_selected_city', JSON.stringify({ 
-          name: currentCityStr, 
-          lat: latitude, 
-          lon: longitude, 
-          dahriOffset: calculatedOffset 
-        }));
-      }
-    } catch (e) {
-      const savedCity = await AsyncStorage.getItem('@user_selected_city');
-      if (savedCity) {
-        const cityObj = JSON.parse(savedCity);
-        if (cityObj.lat !== null) {
-          setLocationName(cityObj.name + ' (الموقع المحفوظ)');
-          applyDahriTimes(cityObj.lat, cityObj.lon, cityObj.dahriOffset);
-          calculateQibla(cityObj.lat, cityObj.lon);
-          setLoading(false);
-          return;
-        }
+        await AsyncStorage.setItem(SELECTED_CITY_STORAGE_KEY, JSON.stringify({ name: cityName, ...place }));
       }
 
-      setLocationName('تعذّر تحديد موقعك • القدس هي الموقع الافتراضي');
-      applyDahriTimes(31.7683, 35.2137, 0);
-      calculateQibla(31.7683, 35.2137);
+      setLocationName(cityName);
+      applyPrayerTimes(place);
+    } catch (e) {
+      await applyFallbackLocation('تعذّر تحديد موقعك • القدس هي الموقع الافتراضي');
     } finally {
       setLoading(false);
     }
@@ -314,57 +310,31 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
     } else {
       setLocationName(city.name);
       setLoading(true);
-      await AsyncStorage.setItem('@user_selected_city', JSON.stringify(city));
-      applyDahriTimes(city.lat, city.lon, city.dahriOffset);
-      calculateQibla(city.lat, city.lon);
+      await AsyncStorage.setItem(SELECTED_CITY_STORAGE_KEY, JSON.stringify(city));
+      applyPrayerTimes({ lat: city.lat, lon: city.lon!, dahriOffset: city.dahriOffset });
     }
   };
 
-  const applyDahriTimes = (lat: number, lon: number, customOffset?: number) => {
+  /** Computes today's and this month's times for a place and refreshes everything that depends on them. */
+  const applyPrayerTimes = (place: PrayerPlace) => {
     try {
       setLoading(true);
       const today = new Date();
-      const month = today.getMonth() + 1;
-      const day = today.getDate();
+      setTimesMethod(resolveTimesMethod(place));
+      calculateQibla(place.lat, place.lon);
 
-      const monthArray = DAHRI_TIMES[month - 1] || DAHRI_TIMES[0];
-      const baseTimes = monthArray[Math.min(day - 1, monthArray.length - 1)] || ["05:00", "06:30", "11:45", "02:30", "05:00", "06:15"];
-
-      const dahriOffset = customOffset !== undefined ? customOffset : getDahriCityOffset(lat, lon);
-      const dstOffset = getPalestineDstOffset(today);
-
-      const totalOffset = Math.round(dahriOffset + dstOffset);
-      setCurrentCoords({ lat, lon, dahriOffset });
-
-      const newTimings = {
-        Fajr: addMinutesToTime(baseTimes[0], totalOffset, false),
-        Sunrise: addMinutesToTime(baseTimes[1], totalOffset, false),
-        Dhuhr: addMinutesToTime(baseTimes[2], totalOffset, false),
-        Asr: addMinutesToTime(baseTimes[3], totalOffset, true),
-        Maghrib: addMinutesToTime(baseTimes[4], totalOffset, true),
-        Isha: addMinutesToTime(baseTimes[5], totalOffset, true),
-      };
-
+      const newTimings = computePrayerTimings(place, today);
       setTimings(newTimings);
       scheduleAppNotifications(newTimings);
+      updateAndroidWidget(getPrayerStatus(newTimings), newTimings);
 
-      const status = getPrayerStatus(newTimings);
-      updateAndroidWidget(status, newTimings);
-
-      const calculatedMonthList = monthArray.map((dTimes: string[], index: number) => {
-        const dNum = index + 1;
-        return {
-          dayNumber: dNum,
-          dayLabel: `اليوم ${dNum}`,
-          Fajr: addMinutesToTime(dTimes[0], totalOffset, false),
-          Sunrise: addMinutesToTime(dTimes[1], totalOffset, false),
-          Dhuhr: addMinutesToTime(dTimes[2], totalOffset, false),
-          Asr: addMinutesToTime(dTimes[3], totalOffset, true),
-          Maghrib: addMinutesToTime(dTimes[4], totalOffset, true),
-          Isha: addMinutesToTime(dTimes[5], totalOffset, true),
-        };
+      const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+      const monthList = Array.from({ length: daysInMonth }, (_, index) => {
+        const dayNumber = index + 1;
+        const day = new Date(today.getFullYear(), today.getMonth(), dayNumber, 12);
+        return { dayNumber, dayLabel: `اليوم ${dayNumber}`, ...computePrayerTimings(place, day) };
       });
-      setMonthlyTimesList(calculatedMonthList);
+      setMonthlyTimesList(monthList);
     } catch (e) {
       console.error(e);
     } finally {
@@ -476,7 +446,7 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
 
   const showDuha = isDuhaPeriod();
 
-  // parallax: بيحرّك نقش الخلفية مع التمرير (خيار الخلفية ٣)
+  // Parallax: moves the background pattern with scrolling (background option 'girih')
   const bgScroll = useBackgroundScroll();
 
   return (
@@ -490,6 +460,7 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
             hijriDate={hijriDateStr}
             duhaTimes={duhaTimes}
             nightInfo={nightInfo}
+            title={methodLabels.cardTitle}
           />
         </View>
       </View>
@@ -500,6 +471,7 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
             daysList={monthlyTimesList}
             locationName={locationName}
             monthTitle={monthNameStr}
+            title={methodLabels.imsakiyaTitle}
           />
         </View>
       </View>
@@ -509,8 +481,8 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
 
         <View style={[styles.locationCard, themeColors.card, { padding: 16 }]}>
           <View style={{ marginBottom: 12 }}>
-            <Text style={[styles.locationTitle, themeColors.subText, { fontSize: fontSize - 4, textAlign: 'right' }]}>موقعك الحالي • التوقيت الدهري</Text>
-            {/* اسم المدينة: عربي ← يمين، إنجليزي (ما انترجم) ← يسار — حسب أول حرف "قوي" بالاسم */}
+            <Text style={[styles.locationTitle, themeColors.subText, { fontSize: fontSize - 4, textAlign: 'right' }]}>موقعك الحالي • {methodLabels.sourceLabel}</Text>
+            {/* City name: Arabic → right-aligned, untranslated English → left-aligned, based on its first strong letter */}
             <Text
               style={[
                 styles.locationNameText,
@@ -542,7 +514,7 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
 
         <View style={[styles.prayerCard, themeColors.card]}>
           <Text style={[styles.prayerTitle, themeColors.accentText, { fontSize: fontSize, textAlign: 'center', marginBottom: 14 }]}>
-            مواقيت الصلاة وفق التقويم الدهري
+            {methodLabels.cardTitle}
           </Text>
 
           {loading ? (
@@ -563,9 +535,7 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
                 </View>
               )}
 
-              {/* صف كل صلاة قابل للنقر بالكامل لتبديل حالة الإنجاز، والمربع على اليمين بجانب اسم الصلاة.
-                  الشروق ليس صلاة تُقضى، فلا يحصل على مربع اختيار — عرضناه كسطر معلوماتي مُدمج
-                  ومُميّز بخط مائل ومحاذاة للوسط بدل تركه فارغاً بجانب صفوف الصلوات القابلة للتحديد. */}
+              {/* Each prayer row toggles its "done" state; Sunrise is not a prayer, so it is shown as an info line without a checkbox. */}
               {[
                 { key: 'fajr', name: 'الفجر', time: timings.Fajr, showCountdown: true },
                 { key: 'sunrise', name: 'الشروق', time: timings.Sunrise, showCountdown: false },
@@ -577,7 +547,7 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
                 const isLastRow = idx === arr.length - 1;
 
                 if (item.key === 'sunrise') {
-                  // الخط المقطّع (dashed) تحت الشروق يبقى كما هو دون أي تعديل.
+                  // Sunrise is informational only: no checkbox, dashed divider kept as is.
                   return (
                     <View key={item.key} style={styles.sunriseRow}>
                       <HeritageIcons.Sunrise size={14} color={themeColors.subText.color} />
@@ -707,7 +677,7 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
             <Text style={[styles.qiblaHeader, themeColors.text, { fontSize: fontSize + 2, marginBottom: 0 }]}>بوصلة القبلة المشرفة</Text>
           </View>
 
-          {/* توجيه نصي عريض وبسيط لليسار واليمين */}
+          {/* Large, simple turn-left / turn-right guidance */}
           <View style={{
             backgroundColor: isAligned ? QIBLA_ALIGNED_TINT_18 : 'rgba(212, 163, 115, 0.15)',
             paddingVertical: 10,
@@ -724,7 +694,7 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
             </Text>
           </View>
 
-          {/* البوصلة التراثية مع رمز الكعبة في الأعلى */}
+          {/* Heritage compass with the Kaaba marker on top */}
           <View style={[
             styles.ornateCompassOuterRing,
             isAligned && { borderColor: QIBLA_ALIGNED_COLOR, backgroundColor: QIBLA_ALIGNED_TINT_12 }
@@ -753,7 +723,7 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
           </Text>
         </View>
 
-        {/* مودال إمساكية الشهر */}
+        {/* Monthly Imsakiya modal */}
         <Modal visible={imsakiyaModalVisible} animationType="slide" transparent={true}>
           <View style={styles.modalOverlay}>
             <View style={[styles.modalContent, themeColors.card, { maxHeight: '85%', width: '95%' }]}>
@@ -797,7 +767,7 @@ function PrayerTimesScreen({ fontSize, hapticEnabled }: { fontSize: number, hapt
           </View>
         </Modal>
 
-        {/* مودال اختيار المدينة */}
+        {/* City picker modal */}
         <Modal visible={modalVisible} animationType="slide" transparent={true}>
           <View style={styles.modalOverlay}>
             <View style={[styles.modalContent, themeColors.card]}>

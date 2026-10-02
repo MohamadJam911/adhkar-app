@@ -12,7 +12,7 @@ function AllahNamesListScreen({ navigation, route }: { navigation: any, route: a
   const { isDarkMode } = useContext(ThemeContext);
   const themeColors = isDarkMode ? heritageDarkTheme : heritageLightTheme;
 
-  // parallax: بيحرّك نقش الخلفية مع التمرير (خيار الخلفية ٣)
+  // Parallax: moves the background pattern with scrolling (background option 'girih')
   const bgScroll = useBackgroundScroll();
 
   return (
@@ -25,7 +25,7 @@ function AllahNamesListScreen({ navigation, route }: { navigation: any, route: a
         </Text>
         {ALLAH_NAMES.map((item) => (
           <View key={item.id} style={[styles.allahListItemCard, themeColors.card, { padding: fontSize + 2 }]}>
-            {/* ارتفاع سطر كافي للتشكيل المتراكب حتى ما ينقصّ */}
+            {/* Line height tall enough for stacked diacritics */}
             <Text style={[styles.allahListItemName, themeColors.accentText, { fontSize: fontSize + 2, lineHeight: (fontSize + 2) * 1.9, paddingVertical: 2 }]}>{item.name}</Text>
             <Text style={[styles.allahListItemMeaning, themeColors.text, { fontSize: fontSize - 2, marginTop: 4 }]}>{item.meaning}</Text>
           </View>

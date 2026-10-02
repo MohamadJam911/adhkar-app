@@ -69,7 +69,7 @@ function StatsScreen({ navigation, route }: { navigation: any, route: any }) {
     { title: 'المحافظ على الصلاة', desc: 'سجّلت صلواتك ونوافلك في التطبيق', unlocked: totalWeekCount >= 10, icon: HeritageIcons.Mosque },
   ];
 
-  // parallax: بيحرّك نقش الخلفية مع التمرير (خيار الخلفية ٣)
+  // Parallax: moves the background pattern with scrolling (background option 'girih')
   const bgScroll = useBackgroundScroll();
 
   return (
@@ -88,9 +88,9 @@ function StatsScreen({ navigation, route }: { navigation: any, route: any }) {
           </Text>
         </View>
 
-        {/* بطاقة سجل قضاء الصلوات الفائتة */}
+        {/* Missed prayers (qada) card */}
         <View style={[styles.verseCard, themeColors.card]}>
-          {/* العنوان يمين، والرمز على يساره */}
+          {/* Title on the right, icon to its left */}
           <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 6 }}>
             <HeritageIcons.Mosque size={20} color="#D4A373" />
             <Text style={[styles.verseBadgeTitle, themeColors.accentText, { fontSize: fontSize - 2, marginBottom: 0 }]}>
@@ -98,7 +98,7 @@ function StatsScreen({ navigation, route }: { navigation: any, route: any }) {
             </Text>
           </View>
 
-          {/* تحت العنوان: الجملة بس إذا ما في صلوات فائتة، وإلا العداد بالنص */}
+          {/* Under the title: a note when there are no missed prayers, otherwise the counter */}
           {qadaList.length === 0 ? (
             <Text style={[themeColors.subText, { textAlign: 'center', paddingVertical: 10, fontSize: fontSize - 4 }]}>
               ليس لديك أي صلوات فائتة مسجلة.
@@ -170,14 +170,14 @@ function StatsScreen({ navigation, route }: { navigation: any, route: any }) {
                 onPress={() => setSelectedDayModal(item)}
                 activeOpacity={0.7}
               >
-                {/* اليوم والتاريخ يمين، وتحتهم التقدّم يمين كمان، وبعدين الشريط */}
+                {/* Day and date on the right, progress below them, then the bar */}
                 <Text style={[themeColors.text, { fontSize: fontSize - 2, fontWeight: 'bold', textAlign: 'right' }]}>
                   {item.date} ({formatArabicNumbers(item.label)})
                 </Text>
                 <Text style={[themeColors.subText, { fontSize: fontSize - 3, textAlign: 'right', marginTop: 2, marginBottom: 6 }]}>
                   {formatArabicNumbers(item.total)} نشاطًا مسجلًا • {formatArabicNumbers(percentage)}%
                 </Text>
-                {/* الشريط بيتعبّى من اليمين (row-reverse) */}
+                {/* The bar fills from the right (row-reverse) */}
                 <View style={{ height: 10, flexDirection: 'row-reverse', backgroundColor: 'rgba(212,163,115,0.15)', borderRadius: 5, overflow: 'hidden' }}>
                   <View style={{ width: `${percentage}%`, height: '100%', backgroundColor: '#D4A373', borderRadius: 5 }} />
                 </View>

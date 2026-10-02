@@ -13,7 +13,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.mohamad.masra",
       "appleTeamId": "24G8Q7F42U",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "userInterfaceStyle": "automatic",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "نستخدم موقعك الجغرافي فقط لحساب مواقيت الصلاة الدقيقة لمدينتك وتحديد اتجاه القبلة الصحيح. لا يتم تخزين موقعك أو مشاركته مع أي جهة خارجية.",

@@ -3,22 +3,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as StoreReview from 'expo-store-review';
 
 // ==========================================
-// ⭐ منطق "قيّم التطبيق": رابط مباشر لصفحة التطبيق بالمتجر + تذكير تلقائي
-// لطيف يظهر مرة وحدة بعد أول 5 مرات فتح للتطبيق (مو بالفتحة الأولى مباشرة
-// حتى ما يكون مزعج)، وبعدين بيحترم قرار المستخدم: لو ضغط "قيّم الآن" أو
-// "لا شكراً" ما منسأله مرة تانية أبداً، ولو ضغط "ذكرني لاحقاً" منرجع نسأله
-// بعد ١٠ فتحات إضافية بس.
+// "Rate the app": a direct link to the store page plus a gentle prompt shown
+// once after the 5th launch (never on the first one). The user's choice is
+// respected: after "Rate now" or "No thanks" it never asks again, and
+// "Remind me later" asks again after 10 more launches.
 const ANDROID_PACKAGE_NAME = 'com.mohamad.masra';
-// رقم الـ"Apple ID" تبع التطبيق بـApp Store Connect (App Information)
+// The app's Apple ID in App Store Connect (App Information)
 const IOS_APP_STORE_ID = '6817377040';
 
 const RATE_PROMPT_LAUNCH_THRESHOLD = 5;
 const RATE_PROMPT_SNOOZE_GAP = 10;
 
-// ملاحظة: ما منستخدم Linking.canOpenURL هون — على iOS بيرجع false دايماً
-// لـitms-apps إلا إذا انعلن بـLSApplicationQueriesSchemes، وعلى أندرويد ١١+
-// لـmarket:// إلا إذا انعلن بـ<queries>. منحاول نفتح مباشرة ومنرجع للبديل
-// إذا فشل.
+// Linking.canOpenURL is not used: on iOS it returns false for itms-apps unless
+// declared in LSApplicationQueriesSchemes, and on Android 11+ for market://
+// unless declared in <queries>. We try to open directly and fall back on failure.
 const openStoreForRating = async () => {
   try {
     if (Platform.OS === 'ios') {
@@ -26,7 +24,7 @@ const openStoreForRating = async () => {
         await Linking.openURL(`itms-apps://itunes.apple.com/app/id${IOS_APP_STORE_ID}?action=write-review`);
         return;
       }
-      // قبل ما يتعبّى رقم المتجر: نافذة التقييم الأصلية تبع أبل (بتشتغل بدون رقم)
+      // Without a store ID: Apple's native review prompt (works without one)
       if (await StoreReview.isAvailableAsync()) {
         await StoreReview.requestReview();
         return;
@@ -38,7 +36,7 @@ const openStoreForRating = async () => {
     try {
       await Linking.openURL(`market://details?id=${ANDROID_PACKAGE_NAME}`);
     } catch {
-      // لو تطبيق Play Store نفسه مش مثبت على الجهاز (نادر)، نفتح الرابط بالمتصفح
+      // If the Play Store app itself is missing (rare), open the web page
       await Linking.openURL(`https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE_NAME}`);
     }
   } catch (e) {
@@ -46,8 +44,8 @@ const openStoreForRating = async () => {
   }
 };
 
-// بتنحسب مرة وحدة بكل إقلاع للتطبيق (من prepare() بـ App())، وبتحترم قرار
-// المستخدم المحفوظ محلياً — ما بترسل ولا بتجمع أي بيانات، كله على الجهاز.
+// Runs once per launch (from prepare() in App) and respects the choice stored
+// on the device — nothing is sent or collected.
 const checkAndMaybeShowRatePrompt = async () => {
   try {
     const countStr = await AsyncStorage.getItem('@app_launch_count');
@@ -85,7 +83,7 @@ const checkAndMaybeShowRatePrompt = async () => {
       { cancelable: true }
     );
   } catch (e) {
-    // التقييم ميزة إضافية غير أساسية — أي خطأ هون بنتجاهله بصمت وما بنوقف التطبيق
+    // Rating is optional — any error here is ignored without affecting the app
   }
 };
 

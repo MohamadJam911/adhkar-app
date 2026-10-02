@@ -210,15 +210,14 @@ const styles = StyleSheet.create({
   verseText: { textAlign: 'right' },
   verseRef: { textAlign: 'left', fontWeight: 'bold' },
   verseMeaning: { textAlign: 'right', marginTop: 4 },
-  // زر المشاركة: أيقونة بس (بدون كلمة) جوا دائرة ذهبية شفافة
+  // Share button: icon only, inside a translucent gold circle
   shareBtnEnhanced: { backgroundColor: 'rgba(212,163,115,0.15)', width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderColor: '#D4A373AA', alignItems: 'center', justifyContent: 'center' },
   tasbeehCard: { padding: 16, borderRadius: 28, alignItems: 'center', marginBottom: 15, borderWidth: 1.5, borderColor: '#D4A37344' },
   tasbeehTitle: { fontWeight: 'bold', marginBottom: 4 },
   tasbeehWords: { marginBottom: 15 },
   tasbeehCircle: { justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-  // زخرفة بسيطة حوالين دوائر التسبيح الذهبية: حلقة رفيعة متقطعة بلون ذهبي
-  // فاتح، شوي أكبر من الدائرة نفسها، بتعطي إحساس "ميدالية" تراثية بدون ما
-  // تعقّد التصميم. مستخدمة بكل من دائرة الذكر السريع بالهوم ودائرة السبحة.
+  // Thin dashed light-gold ring slightly larger than the tasbih circles, for a
+  // medallion feel. Used by the quick dhikr on Home and the Misbaha screen.
   tasbihDecorRing: {
     borderWidth: 1.5,
     borderColor: 'rgba(212, 163, 115, 0.55)',

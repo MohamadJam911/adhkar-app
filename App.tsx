@@ -25,11 +25,9 @@ SplashScreen.preventAutoHideAsync();
 const RootStack = createNativeStackNavigator();
 
 function AppRoot() {
-  // نستخدم Appearance مباشرة (بدل الاعتماد فقط على useColorScheme) لأن بعض بيئات
-  // Expo Go على iOS لا تُحدّث الـ hook بشكل موثوق عند تغيّر وضع النظام أو عند
-  // الإقلاع الأول. هذا لا يحل مشكلة عدم اكتشاف الوضع الداكن أصلاً إن كانت ناتجة
-  // عن إعداد app.json (راجع الشرح المرفق)، لكنه يضمن تحديث الواجهة فوراً بمجرد
-  // أن يُبلغ النظام عن أي تغيير.
+  // Read Appearance directly (not only useColorScheme), because the hook does
+  // not always update reliably on iOS at first launch or when the system
+  // theme changes; this keeps the UI in sync as soon as the system reports a change.
   const [systemColorScheme, setSystemColorScheme] = useState<ColorSchemeName | null | undefined>(
     Appearance.getColorScheme()
   );
@@ -56,8 +54,8 @@ function AppRoot() {
   useEffect(() => {
     async function prepare() {
       try {
-        // بعد ما يتحدد إذن الإشعارات، منعيد جدولة نافذة الأيام الجاية بمواقيتها
-        // الدقيقة (بدون ما نأخّر شاشة البداية — مش await).
+        // Once the notification permission is settled, reschedule the next days
+        // with exact times (not awaited, so the splash is not delayed).
         Notifications.requestPermissionsAsync()
           .then(() => refreshAppNotifications())
           .catch(() => {});
@@ -66,12 +64,11 @@ function AppRoot() {
           setThemeModeState(savedTheme as ThemeMode);
         }
         await syncUncheckedPrayersToQada();
-        // تحديث ويدجتس الشاشة الرئيسية (أندرويد + آيفون) من المدينة المحفوظة
-        // مع كل فتحة للتطبيق — حتى لو المستخدم ما فتح شاشة المواقيت.
+        // Refresh the home-screen widgets (Android + iOS) from the saved location
+        // on every launch, even if the Prayer Times screen is never opened.
         updateHomeScreenWidgets();
-        // مدة ظهور السبلاش المخصص: خفّضناها حتى تحس فيها أسرع (كانت 1800، صارت
-        // 700) بس لسا كافية إنه حركة التكبير/التلاشي فوق تخلص وتنعرض بشكل
-        // واضح قبل ما ننتقل للتطبيق. عدّل الرقم هون إذا بدك أطول/أقصر.
+        // How long the custom splash stays: long enough for its zoom/fade
+        // animation to finish before the app appears.
         await new Promise(resolve => setTimeout(resolve, 700));
       } catch (e) {
         console.warn(e);
@@ -82,9 +79,9 @@ function AppRoot() {
     prepare();
   }, []);
 
-  // فحص "قيّم التطبيق" بعد ما تجهز الواجهة وتستقر (تأخير بسيط حتى ما يظهر
-  // التذكير فوق حركة الانتقال من السبلاش)، وبيحترم عداد الفتحات وقرار
-  // المستخدم المحفوظين محلياً (راجع checkAndMaybeShowRatePrompt فوق).
+  // "Rate the app" check once the UI has settled (a short delay so the prompt
+  // never appears over the splash transition). Respects the launch counter
+  // and the user's saved choice (see checkAndMaybeShowRatePrompt).
   useEffect(() => {
     if (!appIsReady) return;
     const timer = setTimeout(() => {
@@ -94,18 +91,16 @@ function AppRoot() {
   }, [appIsReady]);
 
   if (!appIsReady) {
-    // سبلاش مخصص بـ JavaScript يبلش من نفس شكل الأيقونة الصغيرة يلي يورّيها
-    // نظام أندرويد 12+ (قيد نظام تشغيل ما فيه طريقة نلغيه بالكود) وبيكبّرها
-    // تدريجياً لحد ما توصل لصورة السبلاش الفنية كاملة الشاشة — أنظر تعريف
-    // AnimatedSplash فوق لتفاصيل الحركة.
+    // JavaScript splash that starts from the small icon Android 12+ always
+    // shows (an OS constraint) and grows into the full-screen splash art —
+    // see AnimatedSplash for the animation.
     return <AnimatedSplash />;
   }
 
-  // لون خلفية الشاشة الأساسي بكل مظهر (نفس أول لون بتدرّج ExactImagePatternWall
-  // تقريباً) — منستخدمه هون كخلفية رسمية للتنقّل (Navigation) حتى ما يبين ولا
-  // ومضة رمادية افتراضية من react-navigation وقت التنقّل بين الشاشات أو لحظة
-  // انتهاء شاشة السبلاش (لأنه بدون هالإعداد، react-navigation بيستخدم لون
-  // خلفية افتراضي رمادي فاتح مش متل ألوان التطبيق أبداً).
+  // Main background colour per theme (about the first colour of the
+  // background gradient), used as the navigation theme background so
+  // react-navigation never flashes its default light grey between screens
+  // or when the splash ends.
   const screenBgColor = isDarkMode ? '#14110E' : '#F9F4EC';
   const navTheme = {
     ...(isDarkMode ? NavDarkTheme : NavDefaultTheme),
@@ -121,9 +116,7 @@ function AppRoot() {
       <ThemeContext.Provider value={{ isDarkMode, themeMode, setThemeMode }}>
         <View style={{ flex: 1, backgroundColor: screenBgColor }}>
           <NavigationContainer theme={navTheme}>
-            {/* headerBackButtonDisplayMode 'minimal': زر الرجوع سهم بس، بدون
-                اسم الشاشة السابقة — على الآيفون كان بيطلع "MainTabs" بالإنجليزي
-                (الاسم الداخلي لشاشة التبويبات) بجانب السهم. */}
+            {/* 'minimal' back button: arrow only — otherwise iOS showed the internal "MainTabs" route name next to it. */}
             <RootStack.Navigator
               screenOptions={{
                 headerShown: false,
@@ -141,7 +134,6 @@ function AppRoot() {
     {(props) => <StatsScreen {...props} route={{ params: { fontSize } }} />}
   </RootStack.Screen>
 
-  {/* 👈 هذه هي الشاشة التي كانت ناقصة */}
   <RootStack.Screen 
     name="PrivacyPolicy" 
     options={{ 
@@ -190,13 +182,11 @@ function AppRoot() {
 }
 
 // ==========================================
-// 🛟 شبكة أمان: لو صار خطأ برمجي غير متوقع بأي مكان بشجرة التطبيق (بيانات
-// تالفة، حالة غير متوقعة...)، بدل ما يشوف المستخدم شاشة بيضاء/سودة فاضية
-// بلا تفسير (سلوك React الافتراضي لأي خطأ غير مُعالَج بالعرض)، بيشوف رسالة
-// ودية بالعربي مع زر "إعادة المحاولة" يرجّع يحاول يعرض التطبيق من جديد
-// بدون ما يحتاج يقفل التطبيق ويفتحه. لازم يكون Class Component لأن React
-// لسا ما بيدعم Error Boundaries بالـ function components (useState وحده
-// ما بيقدر يلتقط أخطاء العرض لأولاده).
+// Error boundary: if an unexpected error happens anywhere in the tree
+// (corrupted data, unexpected state…), the user sees a friendly Arabic
+// message with a "try again" button instead of a blank screen, without
+// restarting the app. It must be a class component — React only supports
+// error boundaries in class components.
 class AppErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean }

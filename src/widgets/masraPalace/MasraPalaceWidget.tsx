@@ -12,23 +12,23 @@ import {
 import type { MasraPalaceViewModel, PalacePrayerCell } from './MasraPalaceWidgetModel';
 
 // ==========================================
-// 📱 ويدجت "مسرى المسلم — القصر الزمردي" (4×2)
+// "Emerald Palace" widget (4×2)
 // ==========================================
-// مطابق للتصميم المرجعي (صورة 802×403 = شبكة 400×200 وحدة): بطاقة قوس
-// "أقرب صلاة" يسار، الهوية (الاسم بخط أميري + شعار قبة الصخرة) يمين،
-// وصف الصلوات الخمس تحت. كل المقاسات مكتوبة بوحدات الشبكة المرجعية
-// ومضروبة بـs = min(عرض/400، ارتفاع/200) — فالتصميم بيحافظ على نسبه
-// بأي حجم ويدجت، وما بيطلع برا الحدود حتى على أصغر لانشر (~110dp).
+// Layout on a 400×200 reference grid: the "next prayer" arch card on the
+// left, the identity (app name in Amiri + Dome of the Rock emblem) on the
+// right, and the five prayers below. Every size is in grid units multiplied
+// by s = min(width/400, height/200), so the design keeps its proportions at
+// any widget size and never overflows, even on the smallest launchers (~110dp).
 //
-// ⚠️ نفس قيود المكتبة الموثّقة بـAllPrayerTimesWidget.tsx:
-//  • بدون React.Fragment، alignItems بدون stretch.
-//  • الصفوف ما بتنعكس تلقائياً لـRTL — كل صف هون مرتّب يدوياً.
+// Library constraints:
+//  • no React.Fragment; alignItems without stretch.
+//  • rows are not mirrored for RTL automatically — every row is ordered by hand.
 
 const APP_NAME = 'مسرى المسلم';
 const REF_WIDTH = 400;
-// ارتفاع التصميم الفعلي بوحدات الشبكة (رأس ١٢١ + صف صلوات بخط كبير ≈٨٠ +
-// هوامش) — أعلى من ٢٠٠ المرجعية لأنه الأسماء والأوقات مكبّرة لكبار السن،
-// فمنحسب s على أساسه حتى ما يطلع شي برا الويدجت بالأحجام القصيرة.
+// Real design height in grid units (121 header + ≈80 prayer row with large
+// text + margins) — taller than the 200 reference because names and times
+// are enlarged for older users, so s is computed from it to avoid overflow.
 const REF_HEIGHT = 225;
 
 type ModelProps = {
@@ -37,9 +37,9 @@ type ModelProps = {
 
 type ScaledProps = ModelProps & { s: number };
 
-// أبعاد الويدجت الفعلية (dp) كما بيعطيها أندرويد — لازمة حتى الخلفية
-// تنرسم بنفس نسبة الويدجت وتغطيه كامل (شوف palaceBackgroundSvg)،
-// وحتى نحسب معامل التكبير s.
+// Real widget size (dp) as reported by Android — needed so the background
+// is drawn at the widget's aspect ratio and covers it fully (see
+// palaceBackgroundSvg), and to compute the scale factor s.
 export type MasraPalaceWidgetProps = ModelProps & {
   widgetWidth?: number;
   widgetHeight?: number;
@@ -68,7 +68,7 @@ export function MasraPalaceWidget({ model, widgetWidth, widgetHeight }: MasraPal
           paddingHorizontal: 20 * s,
         }}
       >
-        {/* ===== الصف العلوي: بطاقة القوس يسار، الهوية يمين (RTL يدوي) ===== */}
+        {/* ===== Top row: arch card on the left, identity on the right (manual RTL) ===== */}
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'flex-start', width: 'match_parent' }}>
           <FlexWidget style={{ marginLeft: 7 * s }}>
             <NextPrayerArchCard model={model} s={s} />
@@ -79,7 +79,7 @@ export function MasraPalaceWidget({ model, widgetWidth, widgetHeight }: MasraPal
           </FlexWidget>
         </FlexWidget>
 
-        {/* ===== صف الصلوات الخمس — الفجر أقصى اليمين ===== */}
+        {/* ===== Five prayers — Fajr on the far right ===== */}
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', width: 'match_parent' }}>
           {[...model.prayers].reverse().map((p) => (
             <PrayerCell key={p.key} prayer={p} s={s} />
@@ -90,12 +90,12 @@ export function MasraPalaceWidget({ model, widgetWidth, widgetHeight }: MasraPal
   );
 }
 
-// اسم التطبيق بخط أميري + شعار قبة الصخرة بدائرة ذهبية، فاصل بنجمة،
-// وسطر "المدينة • التاريخ الهجري"
+// App name in Amiri + emblem in a gold circle, a star divider, and a
+// "city • Hijri date" line
 function BrandBlock({ model, s }: ScaledProps) {
   const emblem = 28 * s;
-  // العمود بياخد عرض السطر الأعرض (الاسم+الشعار) — ما منثبّت عرضه حتى
-  // خط أميري ما ينكسر على سطرين؛ الفاصل والسطر التحته بيتمدّوا معه.
+  // The column takes the width of its widest line (name + emblem); it is not
+  // fixed so Amiri never wraps, and the divider and line below stretch with it.
   return (
     <FlexWidget style={{ flexDirection: 'column', alignItems: 'flex-end' }}>
       <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -149,14 +149,14 @@ function BrandBlock({ model, s }: ScaledProps) {
   );
 }
 
-// بطاقة "أقرب صلاة" — قوس إسلامي (زوايا علوية مدوّرة كتير، سفلية أخف)
+// "Next prayer" card — an Islamic arch (large top radii, smaller bottom ones)
 function NextPrayerArchCard({ model, s }: ScaledProps) {
   const next = model.next;
   const badge = next?.isTomorrow ? 'أقرب صلاة • غداً' : 'أقرب صلاة';
 
-  // ارتفاع ثابت (مش wrap_content) لأنه قوس الـSVG لازم يعرف أبعاده سلفاً.
-  // ١٠٠ وحدة = محتوى البطاقة (≈٨٨ وحدة، مقاسة على الجهاز — خط أميري
-  // عالي) + هامش ٦ فوق وتحت.
+  // Fixed height (not wrap_content) because the SVG arch needs its size up
+  // front: 100 units = card content (≈88, measured on device with the tall
+  // Amiri font) + 6 units of margin above and below.
   const cardWidth = 135 * s;
   const cardHeight = 100 * s;
 
@@ -201,7 +201,7 @@ function NextPrayerArchCard({ model, s }: ScaledProps) {
           }}
         />
 
-        {/* العدّاد التنازلي HH : MM — بيتحدّث كل دقيقة عبر masra-widget-clock */}
+        {/* HH : MM countdown — redrawn every minute by masra-widget-clock */}
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TimeBox value={next?.remainingHours || '--'} s={s} />
           <TextWidget text=":" style={{ fontFamily: F.timer, fontSize: 11 * s, color: C.goldBright, marginHorizontal: 4 * s }} />
@@ -252,7 +252,7 @@ function PrayerCell({ prayer, s }: { prayer: PalacePrayerCell; s: number }) {
         svg={palacePrayerIconSvg(prayer.key, active ? C.goldBright : C.ivory300)}
         style={{ width: 18 * s, height: 18 * s, marginBottom: 1 * s }}
       />
-      {/* أسماء وأوقات كبيرة وعريضة (bold) لسهولة القراءة لكبار السن */}
+      {/* Large, bold names and times for easy reading */}
       <TextWidget
         text={prayer.label}
         style={{ fontFamily: F.label, fontSize: 13.5 * s, color: active ? C.goldBright : C.ivory100, textAlign: 'center' }}

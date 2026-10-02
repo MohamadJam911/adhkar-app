@@ -3,31 +3,21 @@ import { View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withDelay, withTiming, Easing } from 'react-native-reanimated';
 import * as SplashScreen from 'expo-splash-screen';
 
-// لون خلفية شاشة التحميل — مطابق تماماً للون خلفية أيقونة التطبيق نفسها
-// (./assets/icon.png، مأخوذ منها بالضبط) ولنفس اللون بإعداد السبلاش الأصلي
-// (Native) بـ app.json، لحتى ما تبين أي "قطة" لونية أو إحساس بصورتين
-// مختلفتين وقت التبديل بين الأيقونة وشاشة التحميل.
+// Splash background — exactly the app icon's background colour and the
+// native splash colour in app.json, so there is no visible colour jump
+// between the icon and the splash.
 const SPLASH_BG_COLOR = '#12241F';
 
-// سبلاش مُتحرّك: أندرويد 12+ حتماً رح يورّي أيقونة صغيرة بمنتصف الشاشة لحظة
-// إقلاع التطبيق (سلوك نظام تشغيل، ما فيه طريقة نلغيه بالكود). فبدل ما نحارب
-// هالسلوك، عم نستغله: بنخلي أيقونة السبلاش الأصلية هي نفسها ./assets/icon.png
-// (تعديل بـ app.json)، وهون بنبلش صورة السبلاش الكاملة من حجم صغير (قريب من
-// حجم الأيقونة) وبتكبر بنعومة (scale) مع تلاشي دخول (fade in) لحد ما توصل
-// لحجمها الطبيعي كامل الشاشة — فيحس المستخدم إنه فيه حركة واحدة متواصلة
-// بدل قطع مفاجئ. (ملاحظة: أول نسخة كانت بتستخدم interpolate/Extrapolation
-// وصورتين متراكبتين، وطلعت فيها مشكلة عرض على آيفون بالـ Expo Go — رجّعناها
-// لطريقة أبسط وأكيد إنها شغالة، بنفس النمط المستخدم بانيميشن الأذكار
-// (DhikrPulseCard) فوق: useSharedValue + useAnimatedStyle + withTiming.)
+// Animated splash: Android 12+ always shows a small icon in the centre at
+// launch (an OS behaviour that cannot be disabled). Instead of fighting it,
+// the native splash icon is the app icon itself, and this splash starts the
+// full splash art at roughly the icon's size and scales it up with a fade-in
+// until it fills the screen — one continuous motion instead of a hard cut.
+// Built with useSharedValue + useAnimatedStyle + withTiming, like DhikrPulseCard.
 //
-// 🛠️ ملاحظة مهمة (باغ تم اكتشافه وإصلاحه): على بناء حقيقي (EAS Build/APK)
-// كان الـ SplashScreen.hideAsync() بينستدعى بس لما تجهز الشاشة الرئيسية
-// (appIsReady = true)، يعني السبلاش الأصلي (Native) كان ضل غاطي الشاشة كاملة
-// طول فترة ظهور AnimatedSplash (كانت عم تشتغل وتتحرك "تحت" السبلاش الأصلي
-// بدون ما يشوفها المستخدم أبداً!) ولما أخيراً يختفي السبلاش الأصلي، كانت
-// الشاشة الرئيسية جاهزة أصلاً فبيبين التطبيق مباشرة — وهيك AnimatedSplash ما
-// كانت تبين إطلاقاً. الحل: نخفي السبلاش الأصلي فور ما AnimatedSplash نفسها
-// تخلص أول رسمة (onLayout)، مش لما التطبيق الرئيسي يجهز.
+// The native splash is hidden as soon as this component has laid out
+// (onLayout), not when the app is ready — otherwise the native splash covered
+// this animation for its whole duration on release builds and it was never seen.
 const AnimatedSplash = () => {
   const scale = useSharedValue(0.3);
   const opacity = useSharedValue(0);
@@ -55,11 +45,9 @@ const AnimatedSplash = () => {
       style={{ flex: 1, backgroundColor: SPLASH_BG_COLOR, justifyContent: 'center', alignItems: 'center' }}
       onLayout={handleLayout}
     >
-      {/* cover (مش contain): الصورة طويلة وضيّقة (862×1825)، فعلى الآيباد
-          (شاشة أعرض) contain كانت بتترك فراغ أخضر ~٣٠٠ نقطة عالجانبين. cover
-          بتكبّر لحد ما تغطي الشاشة كلها — على الجوالات التكبير ٢-٥٪ بس، وعلى
-          الآيباد ~١.٥× بيقصّ شوي من فوق (رأس القوس) وتحت (السجادة)، والعنوان
-          وقبة الصخرة بالنص بيضلّوا ظاهرين كاملين. */}
+      {/* "cover", not "contain": the art is tall and narrow (862×1825), so on iPad
+          "contain" left ~300pt green bars on the sides. "cover" scales ~2–5% on
+          phones and ~1.5× on iPad, cropping only the arch top and the carpet. */}
       <Animated.Image
         source={require('../../assets/splash.png')}
         resizeMode="cover"

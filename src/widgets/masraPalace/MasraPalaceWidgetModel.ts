@@ -1,18 +1,18 @@
 import { getSafeHijriDate, toEasternArabicNumerals } from '../../utils/formatters';
-import type { PrayerIconKey } from '../widgetTheme';
+import type { PalacePrayerIconKey as PrayerIconKey } from './masraPalaceTheme';
 import type { PrayerTimings } from '../widgetStatus';
 
 // ==========================================
-// 🧮 نموذج العرض (View Model) لويدجت "القصر الزمردي"
+// View model for the "Emerald Palace" widgets
 // ==========================================
-// كل الحسابات هون (الصلاة القادمة، التمييز، التاريخ الهجري، اسم المدينة)
-// حتى يضل مكوّن الويدجت نفسه (MasraPalaceWidget.tsx) رسم بحت بدون منطق.
+// All logic lives here (next prayer, highlighting, Hijri date, city name) so
+// the widget components stay pure rendering.
 //
-// ⏱️ العدّاد التنازلي بدقة الدقيقة: مكتبة الويدجت بترسم الويدجت كصورة
-// PNG ثابتة (ما في شي "بيتكّ" لحاله جوّاها)، فالموديول الأصلي
-// masra-widget-clock بيعيد رسمها ببداية كل دقيقة (شوف nextRefreshAt).
-// لهيك منعرض الدقائق المتبقية مقرّبة لفوق (ceil) — متل أي عدّاد بدون
-// ثواني: "٠٠:٢٦" يعني باقي أقل من ٢٦ دقيقة وأكتر من ٢٥.
+// Minute-accurate countdown: the widget library renders the widget as a
+// static image (nothing ticks inside it), so the native masra-widget-clock
+// module redraws it at the start of every minute (see nextRefreshAt). The
+// remaining minutes are therefore rounded up, like any countdown without
+// seconds: "00:26" means between 25 and 26 minutes left.
 
 export type PalacePrayerCell = {
   key: PrayerIconKey;
@@ -24,21 +24,21 @@ export type PalacePrayerCell = {
 export type PalaceNextPrayer = {
   key: PrayerIconKey;
   label: string;
-  /** وقت الصلاة نفسه "HH:MM" */
+  /** Prayer time "HH:MM" */
   time: string;
-  /** الوقت المتبقي (ساعات/دقائق، مقرّب لفوق للدقيقة) */
+  /** Time remaining (hours/minutes, rounded up to the minute) */
   remainingHours: string;
   remainingMinutes: string;
   isTomorrow: boolean;
 };
 
-/** نافذة الإقامة: من الأذان لحد الإقامة (نفس دقائق widgetStatus.ts) */
+/** Iqama window: from the adhan until the iqama (same minutes as widgetStatus.ts) */
 export type PalaceIqama = {
   key: PrayerIconKey;
   label: string;
-  /** وقت الإقامة "HH:MM" */
+  /** Iqama time "HH:MM" */
   time: string;
-  /** الدقائق المتبقية للإقامة (مقرّبة لفوق) */
+  /** Minutes left until the iqama (rounded up) */
   remainingHours: string;
   remainingMinutes: string;
 };
@@ -48,7 +48,7 @@ export type MasraPalaceViewModel = {
   hijriDate: string;
   prayers: PalacePrayerCell[];
   next: PalaceNextPrayer | null;
-  /** مش null بس بين الأذان والإقامة — الويدجت الصغير بيعرضها بدل "أقرب صلاة" */
+  /** Non-null only between adhan and iqama — the small widget shows it instead of the next prayer */
   iqama: PalaceIqama | null;
 };
 
@@ -60,8 +60,8 @@ type BuildInput = {
 };
 
 export class MasraPalaceWidgetModel {
-  // ترتيب دلالي (فجر ← عشاء)؛ المكوّن بيعكسه وقت الرسم حتى الفجر يطلع
-  // أقصى اليمين (المكتبة ما بتعمل mirror تلقائي للصفوف).
+  // Semantic order (Fajr → Isha); the component reverses it when rendering so
+  // Fajr ends up on the far right (the library does not mirror rows).
   static readonly PRAYERS: { key: PrayerIconKey; label: string }[] = [
     { key: 'Fajr', label: 'الفجر' },
     { key: 'Dhuhr', label: 'الظهر' },
@@ -70,7 +70,7 @@ export class MasraPalaceWidgetModel {
     { key: 'Isha', label: 'العشاء' },
   ];
 
-  // دقائق ما بين الأذان والإقامة — نفس القيم بـwidgetStatus.ts وprayerLogic.tsx
+  // Minutes between adhan and iqama — same values as widgetStatus.ts and prayerLogic.tsx
   static readonly IQAMA_MINUTES: Record<PrayerIconKey, number> = {
     Fajr: 20,
     Dhuhr: 15,
@@ -86,8 +86,8 @@ export class MasraPalaceWidgetModel {
       return Number.isFinite(mins) && mins > nowMinutes;
     });
 
-    // بعد العشاء: الصلاة القادمة فجر بكرا — ومنعرض صف بكرا كامل حتى الوقت
-    // المميّز بالصف يطابق وقت البطاقة.
+    // After Isha the next prayer is tomorrow's Fajr, and tomorrow's full row is
+    // shown so the highlighted time matches the card.
     const isTomorrow = !upcoming;
     const nextDef = upcoming ?? MasraPalaceWidgetModel.PRAYERS[0];
     const rowSource = isTomorrow ? tomorrow : today;
@@ -96,7 +96,7 @@ export class MasraPalaceWidgetModel {
 
     return {
       cityLabel: MasraPalaceWidgetModel.shortCityLabel(cityName),
-      // التصميم المرجعي بيعرض التاريخ الهجري بالأرقام العربية الهندية (١٤٤٨)
+      // Hijri date in Arabic-Indic digits (١٤٤٨), as in the design
       hijriDate: toEasternArabicNumerals(getSafeHijriDate(now)),
       prayers: MasraPalaceWidgetModel.PRAYERS.map((p) => ({
         key: p.key,
@@ -138,9 +138,10 @@ export class MasraPalaceWidgetModel {
   }
 
   /**
-   * وقت إعادة الرسم الجاية: بداية الدقيقة الجاية (+نص ثانية أمان حتى ما
-   * نرسم قبل الحدّ بلحظة ونطلع بنفس الدقيقة). بما إنه كل وقت صلاة على
-   * رأس دقيقة، هاد بيضمن كمان التبديل للصلاة الجاية بنفس دقيقة الأذان.
+   * Next redraw: the start of the next minute (+0.5 s so we never draw just
+   * before the boundary and land in the same minute). Since every prayer time
+   * is on a whole minute, this also switches to the next prayer within the
+   * adhan's minute.
    */
   static nextRefreshAt(now: Date = new Date()): Date {
     const next = new Date(now);
@@ -174,8 +175,8 @@ export class MasraPalaceWidgetModel {
     };
   }
 
-  // أسماء المدن بجدول PALESTINE_CITIES طويلة للويدجت ("القدس الشريف (توقيت
-  // الأقصى)"، "حيفا / الداخل الفلسطيني") — منشيل الوصف الإضافي.
+  // City names in PALESTINE_CITIES are too long for the widget ("القدس الشريف
+  // (توقيت الأقصى)", "حيفا / الداخل الفلسطيني"), so the extra description is dropped.
   static shortCityLabel(name: string): string {
     return name.split(' (')[0].split(' / ')[0].trim();
   }
