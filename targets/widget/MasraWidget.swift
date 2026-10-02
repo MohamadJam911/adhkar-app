@@ -82,6 +82,8 @@ struct SchedulePayload: Decodable {
     let v: Int
     let city: String
     let iqama: [String: Int]
+    /// Text scale from the app's font size (absent in payloads from older app versions)
+    let textScale: Double?
     let days: [ScheduleDay]
 
     static func load() -> SchedulePayload? {
@@ -173,6 +175,8 @@ struct WidgetState {
     let cells: [PrayerCell]
     let next: NextPrayer
     let iqama: IqamaWindow?
+    /// Follows the app's font size: 0.9, 1, 1.15 or 1.3 (see appPreferences.ts)
+    var textScale: CGFloat = 1
 
     /// Same logic as MasraPalaceWidgetModel.ts: the next prayer today, after Isha
     /// tomorrow's Fajr (with tomorrow's full row), and the iqama window after each adhan.
@@ -204,7 +208,7 @@ struct WidgetState {
         guard let next else { return nil }
 
         let cells = PrayerKey.allCases.map { PrayerCell(key: $0, time: row.time($0), isNext: $0 == next.key) }
-        return WidgetState(city: payload.city, cells: cells, next: next, iqama: iqama)
+        return WidgetState(city: payload.city, cells: cells, next: next, iqama: iqama, textScale: CGFloat(payload.textScale ?? 1))
     }
 
     static let placeholder: WidgetState = {
@@ -333,7 +337,7 @@ struct MasraPrayerWidget: Widget {
             MasraWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("مسرى المسلم")
-        .description("الصلاة القادمة مع عدّاد تنازلي مباشر ومواقيت اليوم من التقويم الدهري")
+        .description("الصلاة القادمة مع عدّاد تنازلي مباشر ومواقيت اليوم كاملة")
         .supportedFamilies([.systemSmall, .systemMedium])
         .contentMarginsDisabled()
     }

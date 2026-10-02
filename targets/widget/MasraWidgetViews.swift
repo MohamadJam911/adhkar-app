@@ -361,7 +361,12 @@ struct SmallPalaceLayout: View {
 
     var body: some View {
         GeometryReader { geo in
-            let s = min(geo.size.width / 170, geo.size.height / 190)
+            // Text follows the app's font size; above 1 the identity row is
+            // hidden so the extra size goes to the prayer card.
+            let t = state.textScale
+            let large = t > 1
+            let designHeight: CGFloat = large ? 160 + 116 * (t - 1) : 190
+            let s = min(geo.size.width / 170, geo.size.height / designHeight)
             let iqama = state.iqama
             let key = iqama?.key ?? state.next.key
             let target = iqama?.date ?? state.next.date
@@ -369,31 +374,35 @@ struct SmallPalaceLayout: View {
             let footer = iqama.map { "الإقامة \($0.time)" } ?? "الأذان \(state.next.time)"
 
             VStack(spacing: 0) {
-                HStack(spacing: 5 * s) {
-                    Text("مسرى المسلم")
-                        .font(MasraFonts.amiri(14 * s))
-                        .foregroundColor(Palace.gold)
-                        .shadow(color: .black, radius: 2, y: 1)
-                    DomeEmblem(size: 20 * s)
+                if !large {
+                    HStack(spacing: 5 * s) {
+                        Text("مسرى المسلم")
+                            .font(MasraFonts.amiri(14 * s))
+                            .foregroundColor(Palace.gold)
+                            .shadow(color: .black, radius: 2, y: 1)
+                        DomeEmblem(size: 20 * s)
+                    }
                 }
 
                 Spacer(minLength: 2)
 
-                ArchCard(width: 146 * s, height: 116 * s, top: 26 * s, bottom: 12 * s) {
+                ArchCard(width: 146 * s, height: 116 * t * s, top: 26 * s, bottom: 12 * s) {
                     VStack(spacing: 3 * s) {
-                        GoldBadge(text: badge, size: 8 * s)
+                        GoldBadge(text: badge, size: 8 * t * s)
                         HStack(spacing: 5 * s) {
                             Text(key.label)
-                                .font(MasraFonts.amiri(22 * s))
+                                .font(MasraFonts.amiri(22 * t * s))
                                 .foregroundColor(Palace.ivory)
                                 .shadow(color: .black, radius: 2, y: 1)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
                             Image(systemName: key.symbol)
-                                .font(.system(size: 13 * s, weight: .semibold))
+                                .font(.system(size: 13 * t * s, weight: .semibold))
                                 .foregroundColor(Palace.gold)
                         }
-                        LiveCountdown(now: now, target: target, size: 14 * s)
+                        LiveCountdown(now: now, target: target, size: 14 * t * s)
                         Text(footer)
-                            .font(MasraFonts.cairo(11.5 * s))
+                            .font(MasraFonts.cairo(11.5 * t * s))
                             .foregroundColor(Palace.gold)
                             .environment(\.layoutDirection, .rightToLeft)
                     }
@@ -421,7 +430,15 @@ struct MediumPalaceLayout: View {
 
     var body: some View {
         GeometryReader { geo in
-            let s = min(geo.size.width / 400, geo.size.height / 190)
+            // Text follows the app's font size. Above 1 the widget switches to a
+            // large-text layout without the badge and prayer icons, so the extra
+            // size goes to the text (same idea as the Android widget).
+            let t = state.textScale
+            let large = t > 1
+            let cardHeight: CGFloat = large ? 71 * t : 86
+            let rowHeight: CGFloat = large ? 12 + 41 * t : 70
+            let s = min(geo.size.width / 400, geo.size.height / (34 + cardHeight + rowHeight))
+            let nextLabel = large && state.next.isTomorrow ? "فجر الغد" : state.next.key.label
 
             VStack(spacing: 0) {
                 // RTL: the first HStack item is on the right — identity on the right, card on the left
@@ -456,14 +473,18 @@ struct MediumPalaceLayout: View {
 
                     Spacer(minLength: 8 * s)
 
-                    ArchCard(width: 135 * s, height: 86 * s, top: 24 * s, bottom: 12 * s) {
+                    ArchCard(width: (large ? 150 : 135) * s, height: cardHeight * s, top: 24 * s, bottom: 12 * s) {
                         VStack(spacing: 3 * s) {
-                            GoldBadge(text: state.next.isTomorrow ? "أقرب صلاة • غداً" : "أقرب صلاة", size: 7 * s)
-                            Text(state.next.key.label)
-                                .font(MasraFonts.amiri(19 * s))
+                            if !large {
+                                GoldBadge(text: state.next.isTomorrow ? "أقرب صلاة • غداً" : "أقرب صلاة", size: 7 * t * s)
+                            }
+                            Text(nextLabel)
+                                .font(MasraFonts.amiri(19 * t * s))
                                 .foregroundColor(Palace.ivory)
                                 .shadow(color: .black, radius: 2, y: 1)
-                            LiveCountdown(now: now, target: state.next.date, size: 12.5 * s)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                            LiveCountdown(now: now, target: state.next.date, size: 12.5 * t * s)
                         }
                     }
                 }
@@ -474,7 +495,7 @@ struct MediumPalaceLayout: View {
                 // RTL: Fajr (first item) ends up on the far right
                 HStack(spacing: 6 * s) {
                     ForEach(state.cells, id: \.key) { cell in
-                        PrayerCellView(cell: cell, s: s)
+                        PrayerCellView(cell: cell, s: s, t: t, showIcon: !large)
                     }
                 }
                 .padding(.horizontal, 20 * s)
@@ -489,19 +510,23 @@ struct MediumPalaceLayout: View {
 struct PrayerCellView: View {
     let cell: PrayerCell
     let s: CGFloat
+    var t: CGFloat = 1
+    var showIcon = true
 
     var body: some View {
         VStack(spacing: 1 * s) {
-            Image(systemName: cell.key.symbol)
-                .font(.system(size: 14 * s, weight: .medium))
-                .foregroundColor(cell.isNext ? Palace.gold : Palace.ivory300)
+            if showIcon {
+                Image(systemName: cell.key.symbol)
+                    .font(.system(size: 14 * s, weight: .medium))
+                    .foregroundColor(cell.isNext ? Palace.gold : Palace.ivory300)
+            }
             Text(cell.key.label)
-                .font(MasraFonts.cairo(13 * s))
+                .font(MasraFonts.cairo(13 * t * s))
                 .foregroundColor(cell.isNext ? Palace.gold : Palace.ivory)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
             Text(cell.time)
-                .font(MasraFonts.cairo(11.5 * s))
+                .font(MasraFonts.cairo(11.5 * t * s))
                 .foregroundColor(cell.isNext ? Palace.white : Palace.ivory200)
                 .environment(\.layoutDirection, .leftToRight)
         }
