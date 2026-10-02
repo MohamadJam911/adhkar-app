@@ -31,18 +31,21 @@ import type { MasraPalaceViewModel, PalacePrayerCell } from './MasraPalaceWidget
 // (allowFontScaling false) so text and boxes always stay in proportion.
 
 const APP_NAME = 'مسرى المسلم';
-const REF_WIDTH = 400;
+// The content needs ≈340 units of width; 350 (instead of iOS's 400) lets tall
+// Android widgets, which are limited by their width, use the space they have.
+const REF_WIDTH = 350;
 const DEFAULT_WIDTH = 320;
 const DEFAULT_HEIGHT = 160;
 
+// Android draws Amiri with a much taller line box than iOS (≈2.75× the font
+// size, for its stacked diacritics), so the card is taller than on iPhone:
+// badge ≈15 + name ≈52 + countdown ≈22 + gaps → 100 units.
+const CARD_HEIGHT = 100;
 /** Card and prayer-row text heights, in grid units at t = 1 (they grow with t). */
-const CARD_TEXT_HEIGHT = 70;
+const CARD_TEXT_HEIGHT = 89;
 const ROW_TEXT_HEIGHT = 63;
 
-/** Amiri's Android line box is much taller than on iOS; text is centred in an iOS-height box. */
-const AMIRI_LINE = 1.76;
-
-const designHeightFor = (t: number) => 196 + (CARD_TEXT_HEIGHT + ROW_TEXT_HEIGHT) * (t - 1);
+const designHeightFor = (t: number) => 210 + (CARD_TEXT_HEIGHT + ROW_TEXT_HEIGHT) * (t - 1);
 
 export type MasraPalaceWidgetProps = {
   model: MasraPalaceViewModel;
@@ -59,23 +62,21 @@ export function Label({ text, style }: { text: string; style: TextWidgetStyle })
   return <TextWidget text={text} maxLines={1} allowFontScaling={false} style={style} />;
 }
 
-/** Amiri text centred in a box of iOS line height, trimming Android's extra font padding. */
+/** Calligraphic (Amiri) text with the soft shadow used on iPhone. */
 export function AmiriText({ text, size, color }: { text: string; size: number; color: TextWidgetStyle['color'] }) {
   return (
-    <FlexWidget style={{ height: size * AMIRI_LINE, justifyContent: 'center', alignItems: 'center' }}>
-      <Label
-        text={text}
-        style={{
-          fontFamily: F.calligraphy,
-          fontSize: size,
-          color,
-          textAlign: 'center',
-          textShadowColor: '#000000',
-          textShadowRadius: 2,
-          textShadowOffset: { width: 0, height: 1 },
-        }}
-      />
-    </FlexWidget>
+    <Label
+      text={text}
+      style={{
+        fontFamily: F.calligraphy,
+        fontSize: size,
+        color,
+        textAlign: 'center',
+        textShadowColor: '#000000',
+        textShadowRadius: 2,
+        textShadowOffset: { width: 0, height: 1 },
+      }}
+    />
   );
 }
 
@@ -170,7 +171,7 @@ function NextPrayerArchCard({ model, s, t }: { model: MasraPalaceViewModel } & S
   const badge = next?.isTomorrow ? 'أقرب صلاة • غداً' : 'أقرب صلاة';
   // Fixed size (not wrap_content) because the SVG arch needs it up front.
   const cardWidth = 135 * u;
-  const cardHeight = (86 + CARD_TEXT_HEIGHT * (t - 1)) * s;
+  const cardHeight = (CARD_HEIGHT + CARD_TEXT_HEIGHT * (t - 1)) * s;
 
   return (
     <OverlapWidget style={{ width: cardWidth, height: cardHeight }}>

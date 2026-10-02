@@ -18,11 +18,17 @@ import type { MasraPalaceViewModel } from './MasraPalaceWidgetModel';
 // card together, so the proportions stay the same at every size.
 
 const APP_NAME = 'مسرى المسلم';
-const REF_WIDTH = 170;
+// The card is 146 units wide; 160 leaves a small margin on each side.
+const REF_WIDTH = 160;
 const DEFAULT_SIZE = 150;
 
-/** Text heights at t = 1 (grid units) that grow with t: card text 101, identity 25, city 17. */
-const designHeightFor = (t: number) => 190 + 143 * (t - 1);
+// Android draws Amiri with a much taller line box than iOS (≈2.75× the font
+// size), so the card is 134 units tall (badge 17 + name 61 + countdown 25 +
+// adhan time 22 + gaps) and the identity row ≈39.
+const CARD_HEIGHT = 134;
+const CARD_TEXT_HEIGHT = 125;
+/** Text heights at t = 1 that grow with t: card text 125, identity 39, city 17. */
+const designHeightFor = (t: number) => 218 + (CARD_TEXT_HEIGHT + 39 + 17) * (t - 1);
 
 export type MasraPalaceMiniWidgetProps = {
   model: MasraPalaceViewModel;
@@ -83,7 +89,7 @@ function MiniArchCard({ model, s, t }: { model: MasraPalaceViewModel; s: number;
   const footer = iqama ? `الإقامة ${iqama.time}` : next ? `الأذان ${next.time}` : '';
 
   const cardWidth = 146 * u;
-  const cardHeight = (116 + 101 * (t - 1)) * s;
+  const cardHeight = (CARD_HEIGHT + CARD_TEXT_HEIGHT * (t - 1)) * s;
 
   return (
     <OverlapWidget style={{ width: cardWidth, height: cardHeight }}>
