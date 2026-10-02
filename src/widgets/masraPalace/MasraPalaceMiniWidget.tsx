@@ -1,5 +1,6 @@
 import React from 'react';
 import { FlexWidget, TextWidget, SvgWidget, OverlapWidget } from 'react-native-android-widget';
+import { CountdownStrip } from './MasraPalaceWidget';
 import {
   PALACE_COLORS as C,
   PALACE_FONTS as F,
@@ -168,12 +169,8 @@ function MiniArchCard({ model, s, t }: { model: MasraPalaceViewModel; s: number;
           />
         </FlexWidget>
 
-        {/* HH : MM countdown — redrawn every minute by masra-widget-clock */}
-        <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <MiniTimeBox value={hours} s={s * t} />
-          <TextWidget text=":" style={{ fontFamily: F.timer, fontSize: 12 * t * s, color: C.goldBright, marginHorizontal: 4 * s }} />
-          <MiniTimeBox value={minutes} s={s * t} />
-        </FlexWidget>
+        {/* Countdown strip, as on iPhone — redrawn every minute by masra-widget-clock */}
+        <CountdownStrip hours={hours} minutes={minutes} size={14 * t * s} s={s} />
 
         {/* Adhan / iqama time — large and bold for readability */}
         <TextWidget
@@ -182,24 +179,5 @@ function MiniArchCard({ model, s, t }: { model: MasraPalaceViewModel; s: number;
         />
       </FlexWidget>
     </OverlapWidget>
-  );
-}
-
-function MiniTimeBox({ value, s }: { value: string; s: number }) {
-  return (
-    <FlexWidget
-      style={{
-        width: 25 * s,
-        height: 22 * s,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: C.timeBoxBg,
-        borderWidth: 1,
-        borderColor: C.timeBoxBorder,
-        borderRadius: 3 * s,
-      }}
-    >
-      <TextWidget text={value} style={{ fontFamily: F.timer, fontSize: 13.5 * s, color: C.goldLight, textAlign: 'center' }} />
-    </FlexWidget>
   );
 }

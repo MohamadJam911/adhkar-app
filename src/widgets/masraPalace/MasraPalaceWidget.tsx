@@ -237,32 +237,39 @@ function NextPrayerArchCard({ model, s, layout }: LayoutProps) {
           }}
         />
 
-        {/* HH : MM countdown — redrawn every minute by masra-widget-clock */}
-        <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <TimeBox value={next?.remainingHours || '--'} s={s * t} />
-          <TextWidget text=":" style={{ fontFamily: F.timer, fontSize: 14 * t * s, color: C.goldBright, marginHorizontal: 4 * s }} />
-          <TimeBox value={next?.remainingMinutes || '--'} s={s * t} />
-        </FlexWidget>
+        {/* Countdown strip, as on iPhone — redrawn every minute by masra-widget-clock */}
+        <CountdownStrip hours={next?.remainingHours} minutes={next?.remainingMinutes} size={15 * t * s} s={s} />
       </FlexWidget>
     </OverlapWidget>
   );
 }
 
-function TimeBox({ value, s }: { value: string; s: number }) {
+/** "1:05"-style remaining time (hours without a leading zero), like the iPhone widget. */
+export const formatRemaining = (hours?: string, minutes?: string): string => {
+  const h = Number(hours);
+  return Number.isFinite(h) && minutes && minutes !== '--' ? `${h}:${minutes}` : '--:--';
+};
+
+/**
+ * Full-width dark strip with a thin gold border holding the countdown — the
+ * same element as LiveCountdown in the iPhone widget (MasraWidgetViews.swift).
+ */
+export function CountdownStrip({ hours, minutes, size, s }: { hours?: string; minutes?: string; size: number; s: number }) {
   return (
     <FlexWidget
       style={{
-        width: 29 * s,
-        height: 24 * s,
+        width: 'match_parent',
+        marginHorizontal: 3 * s,
         alignItems: 'center',
         justifyContent: 'center',
+        paddingVertical: size * 0.18,
         backgroundColor: C.timeBoxBg,
         borderWidth: 1,
         borderColor: C.timeBoxBorder,
-        borderRadius: 3 * s,
+        borderRadius: size * 0.25,
       }}
     >
-      <TextWidget text={value} style={{ fontFamily: F.timer, fontSize: 15 * s, color: C.goldLight, textAlign: 'center' }} />
+      <TextWidget text={formatRemaining(hours, minutes)} style={{ fontFamily: F.timer, fontSize: size, color: C.goldLight, textAlign: 'center' }} />
     </FlexWidget>
   );
 }
