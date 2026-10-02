@@ -3,6 +3,7 @@ import type { ExtensionStorage as ExtensionStorageType } from '@bacons/apple-tar
 import type { PrayerTimings } from '../widgetStatus';
 import { PrayerTimesProvider } from '../../services/PrayerTimesProvider';
 import { MasraPalaceWidgetModel } from '../masraPalace/MasraPalaceWidgetModel';
+import { loadWidgetTextScale } from '../../services/appPreferences';
 
 // ==========================================
 // iPhone widget bridge (WidgetKit — Swift in targets/widget)
@@ -29,6 +30,8 @@ export type IosWidgetPayload = {
   city: string;
   generatedAt: string;
   iqama: Record<string, number>;
+  /** Text scale from the app's font size (read by the Swift widget from build 1.0.1). */
+  textScale: number;
   days: IosWidgetDay[];
 };
 
@@ -58,6 +61,7 @@ export class IosWidgetBridge {
       city: MasraPalaceWidgetModel.shortCityLabel(provider.location.name),
       generatedAt: now.toISOString(),
       iqama: { ...MasraPalaceWidgetModel.IQAMA_MINUTES },
+      textScale: await loadWidgetTextScale(),
       days,
     };
   }

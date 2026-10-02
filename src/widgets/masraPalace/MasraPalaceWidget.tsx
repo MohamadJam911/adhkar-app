@@ -17,8 +17,8 @@ import type { MasraPalaceViewModel, PalacePrayerCell } from './MasraPalaceWidget
 // Layout on a 400×200 reference grid: the "next prayer" arch card on the
 // left, the identity (app name in Amiri + Dome of the Rock emblem) on the
 // right, and the five prayers below. Every size is in grid units multiplied
-// by s = min(width/400, height/200), so the design keeps its proportions at
-// any widget size and never overflows, even on the smallest launchers (~110dp).
+// by s = min(width/400, height/designHeight) (see layoutFor), so the design
+// keeps its proportions at any widget size and never overflows.
 //
 // Library constraints:
 //  • no React.Fragment; alignItems without stretch.
@@ -26,17 +26,46 @@ import type { MasraPalaceViewModel, PalacePrayerCell } from './MasraPalaceWidget
 
 const APP_NAME = 'مسرى المسلم';
 const REF_WIDTH = 400;
-// Real design height in grid units (16 top padding + 118 arch card + ≈78
-// prayer row + 18 bottom padding). Cairo and Amiri have tall line boxes
-// (≈1.9× and ≈2.7× the font size), so the large text is budgeted here and s
-// is computed from this height to avoid overflow.
-const REF_HEIGHT = 234; // includes a small safety margin
+
+// ==========================================
+// Text scale and height budget
+// ==========================================
+// `t` follows the app's font size (see appPreferences.widgetTextScaleFor).
+// The widget is limited by its height, so the design height is computed from
+// t and s = min(width/400, height/designHeight) keeps everything inside.
+// Cairo and Amiri have tall line boxes (≈1.9× and ≈2.7× the font size), which
+// is why the text dominates the budget. Above t = 1 the widget switches to a
+// "large text" layout without the prayer icons and the badge, so the extra
+// size goes to the text instead of being lost to the height limit.
+type Layout = {
+  t: number;
+  large: boolean;
+  cardWidth: number;
+  cardHeight: number;
+  designHeight: number;
+};
+
+const layoutFor = (t: number): Layout => {
+  const large = t > 1;
+  const badge = large ? 0 : 16 * t;
+  const cardHeight = 12 + badge + 66 * t + 24 * t; // margins + badge + Amiri name + countdown
+  const prayerRow = 6 + (large ? 0 : 14) + 58 * t; // padding + icon + Cairo name and time
+  return {
+    t,
+    large,
+    cardWidth: large ? 165 : 150,
+    cardHeight,
+    // top/bottom padding (34) + gap (4) + card + prayer row
+    designHeight: 38 + cardHeight + prayerRow,
+  };
+};
 
 type ModelProps = {
   model: MasraPalaceViewModel;
 };
 
 type ScaledProps = ModelProps & { s: number };
+type LayoutProps = ScaledProps & { layout: Layout };
 
 // Real widget size (dp) as reported by Android — needed so the background
 // is drawn at the widget's aspect ratio and covers it fully (see
@@ -44,15 +73,18 @@ type ScaledProps = ModelProps & { s: number };
 export type MasraPalaceWidgetProps = ModelProps & {
   widgetWidth?: number;
   widgetHeight?: number;
+  /** Text scale from the app's font size (1 = default). */
+  textScale?: number;
 };
 
 const DEFAULT_WIDTH = 320;
 const DEFAULT_HEIGHT = 160;
 
-export function MasraPalaceWidget({ model, widgetWidth, widgetHeight }: MasraPalaceWidgetProps) {
+export function MasraPalaceWidget({ model, widgetWidth, widgetHeight, textScale = 1 }: MasraPalaceWidgetProps) {
   const width = widgetWidth || DEFAULT_WIDTH;
   const height = widgetHeight || DEFAULT_HEIGHT;
-  const s = Math.min(width / REF_WIDTH, height / REF_HEIGHT);
+  const layout = layoutFor(textScale);
+  const s = Math.min(width / REF_WIDTH, height / layout.designHeight);
 
   return (
     <OverlapWidget clickAction="OPEN_APP" style={{ height: 'match_parent', width: 'match_parent' }}>
@@ -72,7 +104,7 @@ export function MasraPalaceWidget({ model, widgetWidth, widgetHeight }: MasraPal
         {/* ===== Top row: arch card on the left, identity on the right (manual RTL) ===== */}
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'flex-start', width: 'match_parent' }}>
           <FlexWidget style={{ marginLeft: 7 * s }}>
-            <NextPrayerArchCard model={model} s={s} />
+            <NextPrayerArchCard model={model} s={s} layout={layout} />
           </FlexWidget>
           <FlexWidget style={{ flex: 1 }} />
           <FlexWidget style={{ marginRight: 13 * s }}>
@@ -83,7 +115,7 @@ export function MasraPalaceWidget({ model, widgetWidth, widgetHeight }: MasraPal
         {/* ===== Five prayers — Fajr on the far right ===== */}
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', width: 'match_parent' }}>
           {[...model.prayers].reverse().map((p) => (
-            <PrayerCell key={p.key} prayer={p} s={s} />
+            <PrayerCell key={p.key} prayer={p} s={s} layout={layout} />
           ))}
         </FlexWidget>
       </FlexWidget>
@@ -151,15 +183,16 @@ function BrandBlock({ model, s }: ScaledProps) {
 }
 
 // "Next prayer" card — an Islamic arch (large top radii, smaller bottom ones)
-function NextPrayerArchCard({ model, s }: ScaledProps) {
+function NextPrayerArchCard({ model, s, layout }: LayoutProps) {
+  const { t, large } = layout;
   const next = model.next;
   const badge = next?.isTomorrow ? 'أقرب صلاة • غداً' : 'أقرب صلاة';
+  // Without the badge in the large layout, "tomorrow" moves into the name.
+  const label = large && next?.isTomorrow ? 'فجر الغد' : next?.label || '—';
 
-  // Fixed height (not wrap_content) because the SVG arch needs its size up
-  // front: 118 units = card content (badge ≈16 + prayer name ≈66 with the
-  // tall Amiri font + countdown 24) + 6 units of margin above and below.
-  const cardWidth = 150 * s;
-  const cardHeight = 118 * s;
+  // Fixed size (not wrap_content) because the SVG arch needs it up front.
+  const cardWidth = layout.cardWidth * s;
+  const cardHeight = layout.cardHeight * s;
 
   return (
     <OverlapWidget style={{ width: cardWidth, height: cardHeight }}>
@@ -176,24 +209,26 @@ function NextPrayerArchCard({ model, s }: ScaledProps) {
           justifyContent: 'center',
         }}
       >
-        <FlexWidget
-          style={{
-            backgroundGradient: { from: C.goldDeep, to: C.goldBright, orientation: 'LEFT_RIGHT' },
-            borderRadius: 6 * s,
-            paddingHorizontal: 8 * s,
-          }}
-        >
-          <TextWidget
-            text={badge}
-            style={{ fontFamily: F.label, fontSize: 8.5 * s, color: C.emerald950, textAlign: 'center' }}
-          />
-        </FlexWidget>
+        {!large && (
+          <FlexWidget
+            style={{
+              backgroundGradient: { from: C.goldDeep, to: C.goldBright, orientation: 'LEFT_RIGHT' },
+              borderRadius: 6 * s,
+              paddingHorizontal: 8 * s,
+            }}
+          >
+            <TextWidget
+              text={badge}
+              style={{ fontFamily: F.label, fontSize: 8.5 * t * s, color: C.emerald950, textAlign: 'center' }}
+            />
+          </FlexWidget>
+        )}
 
         <TextWidget
-          text={next?.label || '—'}
+          text={label}
           style={{
             fontFamily: F.calligraphy,
-            fontSize: 24 * s,
+            fontSize: 24 * t * s,
             color: C.ivory100,
             textAlign: 'center',
             textShadowColor: '#000000',
@@ -204,9 +239,9 @@ function NextPrayerArchCard({ model, s }: ScaledProps) {
 
         {/* HH : MM countdown — redrawn every minute by masra-widget-clock */}
         <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <TimeBox value={next?.remainingHours || '--'} s={s} />
-          <TextWidget text=":" style={{ fontFamily: F.timer, fontSize: 14 * s, color: C.goldBright, marginHorizontal: 4 * s }} />
-          <TimeBox value={next?.remainingMinutes || '--'} s={s} />
+          <TimeBox value={next?.remainingHours || '--'} s={s * t} />
+          <TextWidget text=":" style={{ fontFamily: F.timer, fontSize: 14 * t * s, color: C.goldBright, marginHorizontal: 4 * s }} />
+          <TimeBox value={next?.remainingMinutes || '--'} s={s * t} />
         </FlexWidget>
       </FlexWidget>
     </OverlapWidget>
@@ -232,7 +267,8 @@ function TimeBox({ value, s }: { value: string; s: number }) {
   );
 }
 
-function PrayerCell({ prayer, s }: { prayer: PalacePrayerCell; s: number }) {
+function PrayerCell({ prayer, s, layout }: { prayer: PalacePrayerCell; s: number; layout: Layout }) {
+  const { t, large } = layout;
   const active = prayer.isNext;
   return (
     <FlexWidget
@@ -249,18 +285,20 @@ function PrayerCell({ prayer, s }: { prayer: PalacePrayerCell; s: number }) {
         backgroundColor: active ? C.activeCellBg : C.inactiveCellBorder,
       }}
     >
-      <SvgWidget
-        svg={palacePrayerIconSvg(prayer.key, active ? C.goldBright : C.ivory300)}
-        style={{ width: 13 * s, height: 13 * s, marginBottom: 1 * s }}
-      />
+      {!large && (
+        <SvgWidget
+          svg={palacePrayerIconSvg(prayer.key, active ? C.goldBright : C.ivory300)}
+          style={{ width: 13 * s, height: 13 * s, marginBottom: 1 * s }}
+        />
+      )}
       {/* Large, bold names and times for easy reading */}
       <TextWidget
         text={prayer.label}
-        style={{ fontFamily: F.label, fontSize: 16 * s, color: active ? C.goldBright : C.ivory100, textAlign: 'center' }}
+        style={{ fontFamily: F.label, fontSize: 16 * t * s, color: active ? C.goldBright : C.ivory100, textAlign: 'center' }}
       />
       <TextWidget
         text={prayer.time}
-        style={{ fontFamily: F.label, fontSize: 15 * s, color: active ? C.ivory50 : C.ivory200, textAlign: 'center' }}
+        style={{ fontFamily: F.label, fontSize: 15 * t * s, color: active ? C.ivory50 : C.ivory200, textAlign: 'center' }}
       />
     </FlexWidget>
   );

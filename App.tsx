@@ -17,6 +17,7 @@ import { SettingsScreen } from './src/screens/SettingsScreen';
 import { syncUncheckedPrayersToQada, updateHomeScreenWidgets } from './src/utils/prayerLogic';
 import { checkAndMaybeShowRatePrompt } from './src/utils/rateApp';
 import { refreshAppNotifications } from './src/services/notificationService';
+import { DEFAULT_FONT_SIZE, loadFontSize, loadHapticsEnabled, saveFontSize, saveHapticsEnabled } from './src/services/appPreferences';
 
 import * as SplashScreen from 'expo-splash-screen';
 
@@ -40,8 +41,8 @@ function AppRoot() {
   }, []);
 
   const [themeMode, setThemeModeState] = useState<ThemeMode>('auto');
-  const [hapticEnabled, setHapticEnabled] = useState(true);
-  const [fontSize, setFontSize] = useState(22);
+  const [hapticEnabled, setHapticEnabledState] = useState(true);
+  const [fontSize, setFontSizeState] = useState(DEFAULT_FONT_SIZE);
   const [appIsReady, setAppIsReady] = useState(false);
 
   const isDarkMode = themeMode === 'auto' ? systemColorScheme === 'dark' : themeMode === 'dark';
@@ -49,6 +50,19 @@ function AppRoot() {
   const setThemeMode = async (mode: ThemeMode) => {
     setThemeModeState(mode);
     await AsyncStorage.setItem('@user_theme_mode', mode);
+  };
+
+  // Font size and haptics are saved so they survive restarts; the widgets
+  // read the font size too, so they are redrawn after it changes.
+  const setFontSize = async (size: number) => {
+    setFontSizeState(size);
+    await saveFontSize(size);
+    updateHomeScreenWidgets();
+  };
+
+  const setHapticEnabled = (enabled: boolean) => {
+    setHapticEnabledState(enabled);
+    saveHapticsEnabled(enabled);
   };
 
   useEffect(() => {
@@ -63,6 +77,8 @@ function AppRoot() {
         if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'auto') {
           setThemeModeState(savedTheme as ThemeMode);
         }
+        setFontSizeState(await loadFontSize());
+        setHapticEnabledState(await loadHapticsEnabled());
         await syncUncheckedPrayersToQada();
         // Refresh the home-screen widgets (Android + iOS) from the saved location
         // on every launch, even if the Prayer Times screen is never opened.

@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { requestWidgetUpdate } from 'react-native-android-widget';
 import type { PrayerTimings } from '../widgetStatus';
 import { PrayerTimesProvider } from '../../services/PrayerTimesProvider';
+import { loadWidgetTextScale } from '../../services/appPreferences';
 import { MasraPalaceWidgetModel, type MasraPalaceViewModel } from './MasraPalaceWidgetModel';
 import { MasraPalaceWidget } from './MasraPalaceWidget';
 import { MasraPalaceMiniWidget } from './MasraPalaceMiniWidget';
@@ -60,10 +61,13 @@ export class MasraPalaceWidgetController {
       model = MasraPalaceWidgetModel.empty();
     }
 
+    // Widget text follows the font size chosen in the app's Settings
+    const textScale = await loadWidgetTextScale();
+
     if (widgetName === MasraPalaceWidgetController.MINI_WIDGET_NAME) {
-      return <MasraPalaceMiniWidget model={model} widgetWidth={size?.width} widgetHeight={size?.height} />;
+      return <MasraPalaceMiniWidget model={model} widgetWidth={size?.width} widgetHeight={size?.height} textScale={textScale} />;
     }
-    return <MasraPalaceWidget model={model} widgetWidth={size?.width} widgetHeight={size?.height} />;
+    return <MasraPalaceWidget model={model} widgetWidth={size?.width} widgetHeight={size?.height} textScale={textScale} />;
   }
 
   /** After a widget instance is removed: reschedules for the rest, or cancels if none are left. */
