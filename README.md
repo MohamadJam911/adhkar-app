@@ -43,7 +43,7 @@ Prayer times are computed in exactly one place, and everything else reads from i
 
 1. **Location.** The user's position comes from GPS (with the country from reverse geocoding) or from a city picked from the list.
 2. **Provider.** `PrayerTimesProvider` resolves which location to use (saved city → last GPS fix → default) from local storage, so background work such as widgets and notifications can compute times while the app is closed.
-3. **Engine.** `prayerTimesEngine` is the single source of truth. `resolveTimesMethod()` chooses the Dahri calendar near Palestine and the astronomical calculation everywhere else.
+3. **Engine.** `prayerTimesEngine` is the single source of truth. `resolveTimesMethod()` chooses the Dahri calendar in Israel, Palestine and Jordan, and the astronomical calculation everywhere else.
 4. **Consumers.**
    - **Screens:** show the result.
    - **Notifications:** scheduled for an exact date each day, within iOS's limit of 64 pending notifications.
