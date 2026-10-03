@@ -33,6 +33,25 @@ More screenshots, for iPhone and iPad, are in [`store/screenshots/`](store/scree
 
 ---
 
+## Architecture
+
+<p align="center">
+  <img src="docs/architecture.png" width="900" alt="Architecture: location → PrayerTimesProvider → prayerTimesEngine → screens, notifications, iPhone widget and Android widgets">
+</p>
+
+Prayer times are computed in exactly one place, and everything else reads from it, so the screen, the reminders and the widgets can never disagree.
+
+1. **Location.** The user's position comes from GPS (with the country from reverse geocoding) or from a city picked from the list.
+2. **Provider.** `PrayerTimesProvider` resolves which location to use (saved city → last GPS fix → default) from local storage, so background work such as widgets and notifications can compute times while the app is closed.
+3. **Engine.** `prayerTimesEngine` is the single source of truth. `resolveTimesMethod()` chooses the Dahri calendar near Palestine and the astronomical calculation everywhere else.
+4. **Consumers.**
+   - **Screens:** show the result.
+   - **Notifications:** scheduled for an exact date each day, within iOS's limit of 64 pending notifications.
+   - **iPhone widget:** receives 14 days of times through a shared App Group and builds its own timeline in Swift.
+   - **Android widgets:** compute their own times and are redrawn every minute by a small Kotlin module.
+
+---
+
 ## How prayer times are calculated
 
 All prayer times — on the screen, in the widgets and in the notifications — come from one module, `src/utils/prayerTimesEngine.ts`.
